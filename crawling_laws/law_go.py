@@ -66,7 +66,7 @@ def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[st
     # 각 법령 링크를 순회하며 본문 크롤링
     # 5개만 테스트
     # law_links = law_links[:5]  # 테스트용으로 5개만 크롤링
-    
+
     for i, link in enumerate(law_links, start=1):
         print(f"법령 {i}번째 링크 텍스트: {link.text}")
         link.click()
@@ -145,7 +145,7 @@ def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[st
     return total_laws
 
 # 문자열 리스트를 텍스트 파일로 저장
-def save_as_txt1(law_texts: list[str]) -> None:
+def save_as_txt(law_texts: list[str]) -> None:
     filename = "txts/laws/law_texts.txt"
     with open(filename, 'w', encoding="utf-8") as f:
         for i, text in enumerate(law_texts, start=1):
@@ -160,7 +160,7 @@ def main():
     wait = WebDriverWait(driver, 10)
 
     laws = search_law_keyword(driver, wait)
-    save_as_txt1(laws)
+    save_as_txt(laws)
 
     driver.quit()
 
