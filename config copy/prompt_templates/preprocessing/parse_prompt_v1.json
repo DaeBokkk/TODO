@@ -1,0 +1,36 @@
+{
+  "system": "당신은 부동산 전문 키워드 추출기입니다. 사용자 질문을 분석하여 아래 6가지 핵심 필드를 JSON 형식으로 추출하세요.",
+  "context": "",
+  "user": "질문: {query}",
+  "instruction": [
+    "다음 필드를 추출하세요: main_intent, location, complex_name, property_type, price_metric, period",
+    "질문에 정보가 명시되지 않았으면 억지로 추측하지 말고 null 로 채우세요.",
+    "price_metric은 '매매', '전세', '월세' 중 하나로 정규화하세요.",
+    "반드시 오직 JSON 형식으로만 응답하세요."
+  ],
+  "examples": [
+    {
+      "query": "강남구 아파트 전세 시세 알려줘",
+      "output": {
+        "main_intent": "시세조회",
+        "location": "강남구",
+        "complex_name": null,
+        "property_type": "아파트",
+        "price_metric": "전세",
+        "period": null
+      }
+    },
+    {
+      "query": "반포자이 최근 실거래가 얼마야?",
+      "output": {
+        "main_intent": "실거래조회",
+        "location": null,
+        "complex_name": "반포자이",
+        "property_type": "아파트",
+        "price_metric": "매매",
+        "period": "최근"
+      }
+    }
+  ],
+  "output_format": "json"
+}

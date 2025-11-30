@@ -1,0 +1,20 @@
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "B", "C", "SIM", "UP"]
+ignore = ["E501"]
+# 필요시 규칙 추가/수정
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
