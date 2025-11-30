@@ -15,7 +15,7 @@ except ImportError:
     pass # 메인 실행이 아닐 경우를 대비해 에러 무시
 
 # ------------------------------------------------------------------------------
-# [설계 설정] 임베딩 모델 및 DB 설정 (업데이트됨)
+# [설계 설정] 임베딩 모델 및 DB 설정
 # ------------------------------------------------------------------------------
 
 # 1. 사용할 임베딩 모델 ID (KO-SBERT) ID: jhgan/ko-sbert-nli
@@ -24,7 +24,7 @@ MODEL_DEVICE = "cpu"
 
 # 2. PostgreSQL DB 연결 정보
 DB_HOST = "0.tcp.jp.ngrok.io"
-DB_PORT = "10062"
+DB_PORT = "17339"
 DB_USER = "rag"
 DB_PASSWORD = "rag"
 DB_NAME = "rag"
@@ -60,7 +60,7 @@ def load_embedding_model() -> Embeddings:
 
 
 # ------------------------------------------------------------------------------
-# 2. 벡터 DB 저장 함수 (Indexing / Ingestion)
+# 2. 벡터 DB 저장 함수
 # ------------------------------------------------------------------------------
 def save_to_vector_db(documents: List[Document], embeddings: Embeddings):
     """
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     ko_sbert_model = load_embedding_model()
 
     # --- 데이터 색인 (지식 기반 구축) ---
-    file_path = 'bitkinds_news_20251129_with_metadata.txt'
+    file_path = 'apt_rent_data_20251130.txt'
     
     # 파일이 존재하면 로드 및 색인 진행
     if os.path.exists(file_path):

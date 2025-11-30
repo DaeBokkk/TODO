@@ -73,13 +73,13 @@ def process_news_data(raw_item: Dict[str, Any], index: int) -> Dict[str, Any]:
     # 여기서는 검색 효율을 위해 하나로 합치되 불필요한 태그만 제거합니다.
     cleaned_text = content_text.replace("제목:", "").replace("내용:", "\n")
     
-    # 기자 이메일, 저작권 문구 등 뉴스 특유의 노이즈 제거 (Regex)
+    # 기자 이메일, 저작권 문구 등 뉴스 특유의 노이즈 제거
     cleaned_text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '', cleaned_text) # 이메일 제거
     cleaned_text = re.sub(r'※ 이 기사의 저작권은.*', '', cleaned_text) # 저작권 문구 제거
     cleaned_text = re.sub(r'\/.*?=.*?기자', '', cleaned_text) # "/용인=김종성 기자" 패턴 제거
     cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip() # 다중 공백 제거
 
-    # 3. 메타데이터 구성 (NF-E3)
+    # 3. 메타데이터 구성
     # 날짜 포맷팅 (YYYYMMDD -> YYYY-MM-DD)
     raw_date = origin_meta.get("enactment_date", "")
     formatted_date = f"{raw_date[:4]}-{raw_date[4:6]}-{raw_date[6:]}" if len(raw_date) == 8 else raw_date
@@ -119,7 +119,7 @@ def create_and_chunk_documents(raw_data_list: List[Dict[str, Any]]) -> List[Docu
 
     print(f"[System] Document 객체 생성 완료: {len(documents)}개")
 
-    # 3-2. 청킹 수행 (F-C2.1)
+    # 3-2. 청킹 수행
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
@@ -137,7 +137,7 @@ def create_and_chunk_documents(raw_data_list: List[Dict[str, Any]]) -> List[Docu
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     # 파일 경로 (업로드한 파일명)
-    file_path = 'bitkinds_news_20251129_with_metadata.txt'
+    file_path = 'apt_rent_data_20251129.txt'
     
     print("--- [1단계] JSONL 파일 로드 ---")
     raw_data = load_raw_jsonl_file(file_path)
@@ -153,3 +153,13 @@ if __name__ == "__main__":
             print(f"enactment_date: {chunk.metadata.get('contract_date')}")
             print(f"region_code: {chunk.metadata.get('region_code')}")
             print(f"Content: {chunk.page_content[:]}...") # 앞 100자만 출력
+
+
+            #  query{
+            #     main_intent : 질문의도
+            #     location : 위치
+            #     complex_name  : 아파트 단지명
+            #     property_type : 부동산 속성 (오피,아파트)
+            #     price_metric : 가격
+            #     period : 조회기간
+            # }
