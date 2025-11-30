@@ -212,9 +212,9 @@ def html_to_text_sel(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict
         return []
 
     while True:
-        # [단계 1] 페이지 내 뉴스 개수 파악
+        # 1. 페이지 내 뉴스 개수 파악
         try:
-            # 개수만 세고 객체(element)는 변수에 저장하지 않습니다 (Stale 에러 방지용)
+            # 개수만 세고 객체(element)는 변수에 저장하지 않음 (Stale 에러 방지용)
             news_items_temp = wait.until(EC.presence_of_all_elements_located((By.XPATH, base_item_xpath)))
             count = len(news_items_temp)
             print(f"현재 페이지의 뉴스 아이템 수: {count}")
@@ -222,7 +222,7 @@ def html_to_text_sel(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict
             print("뉴스 아이템을 찾을 수 없습니다. 다음 페이지 또는 종료.")
             break
 
-        # [단계 2] 인덱스로 순회 (enumerate 대신 range 사용이 훨씬 안정적입니다)
+        # 2. 인덱스로 순회
         # 중요: 리스트를 돌리는게 아니라 0, 1, 2... 숫자로 돌립니다.
         for i in range(count):
             # === [핵심 로직: 재시도 + JS 강제 클릭] ===
@@ -239,7 +239,7 @@ def html_to_text_sel(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict
                     wait.until(EC.element_to_be_clickable((By.XPATH, target_xpath)))
 
                     # 3. [문제 해결] JavaScript로 강제 클릭 (Intercept 에러 해결)
-                    # 일반 click() 대신 JS로 직접 클릭 신호를 보냅니다.
+                    # 일반 click() 대신 JS로 직접 클릭 신호 보냄
                     driver.execute_script("arguments[0].click();", item)
                     
                     print(f"{i + 1}번째 뉴스 아이템을 클릭했습니다.")
