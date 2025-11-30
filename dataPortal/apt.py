@@ -8,6 +8,7 @@ import schedule
 import time
 import scheduler
 import json
+import os
 # 메인 파이프라인 스크립트 함수 구현
 def apt_api_documents_list() -> list[Document]:
     """
@@ -90,12 +91,28 @@ def save_apt_data_to_txt() -> None:
         print(f"=== {ym} 기간에 조회된 실거래가 데이터가 전혀 없습니다. ===")
         return
     
-    text_strings: list[str] = apt_sub.return_apt_string(total_df)
+    text_strings: list[dict] = apt_sub.return_apt_string(total_df)
+
+    # 중복 로직 추가 
+    yesterday = now - datetime.timedelta(days=1)
+    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
+    yesterday_filepath = f"txts/apt_real_estate/apt_data_{yesterday_filedate}.txt"
+
+    previous_hashes = load_previous_hashes(yesterday_filepath)
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    filtered_list: list[dict] = []
+    for rent in text_strings:
+        content = rent.get("content", "")
+        content_hash = md5_hash(content)
+        if content_hash not in previous_hashes:
+            filtered_list.append(rent)
+    print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+    ############# 중복 로직 끝 ######################
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/apt_real_estate/apt_data_{filedate}.txt" # 파일명 설정 -> real_estate/apt_documents_YYYYMMDD.txt
     with open(filename, 'w', encoding='utf-8') as f:
-        for text in (text_strings):
+        for text in (filtered_list):
             f.write(json.dumps(text, ensure_ascii=False))
             f.write("\n")  # 각 문서 구분을 위한 빈 줄 추가
     print(f"텍스트 파일로 저장 완료: {filename}")
@@ -111,11 +128,59 @@ def save_apt_rent_data_to_txt():
     rent_data = apt_sub.get_all_apt_rent_data(ym)
     rent_strings = apt_sub.return_apt_rent_string(rent_data)
 
+    # 중복 로직 추가 
+    yesterday = now - datetime.timedelta(days=1)
+    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
+    yesterday_filepath = f"txts/apt_real_estate/apt_rent_data_{yesterday_filedate}.txt"
+
+    previous_hashes = load_previous_hashes(yesterday_filepath)
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    
+    filtered_list: list[dict] = []
+    for rent in rent_strings:
+        content = rent.get("content", "")
+        content_hash = md5_hash(content)
+        if content_hash not in previous_hashes:
+            filtered_list.append(rent)
+    print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+    ############# 중복 로직 끝 ######################
+    
+    # 파일 저장
     filename = f"txts/apt_real_estate/apt_rent_data_{date}.txt"
     with open(filename, 'w', encoding='utf-8') as f:
-        for rent in (rent_strings):
+        for rent in (filtered_list):
             f.write(json.dumps(rent, ensure_ascii=False))
             f.write("\n")  # 각 문서 구분을 위한 빈 줄 추가
+
+# 문자열의 MD5 해시값 계산 함수
+def md5_hash(text: str) -> str:
+    import hashlib
+    return hashlib.md5(text.encode('utf-8')).hexdigest()
+
+# 전날 txt에서 content만 읽어서 set으로 반환하는 함수
+def load_previous_hashes(filepath: str) -> set:
+    """전날 txt에서 content 해시만 읽어서 set으로 반환"""
+    if not os.path.exists(filepath):
+        return set()
+
+    hashes = set()
+    with open(filepath, 'r', encoding='utf-8') as f:
+        blocks = f.read().strip().split("\n")
+
+        for block in blocks:
+            block = block.strip()
+            if not block:
+                continue
+
+            try:
+                doc = json.loads(block)
+                content = doc.get("content", "")
+                content_hash = md5_hash(content)
+                hashes.add(content_hash)
+            except:
+                continue
+
+    return hashes
 
 # 스케줄링
 # --- 스케줄러 설정 ---

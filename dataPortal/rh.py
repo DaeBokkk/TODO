@@ -131,12 +131,29 @@ def save_rh_trade_data_to_txt() -> None:
     # 문자열 리스트로 변환
     rh_strings = return_rh_trade_string(all_rh_data)
 
+    # 중복 제거 로직 시작
+    yesterday = now - datetime.timedelta(days=1)
+    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"    
+    yesterday_filepath = f"txts/rh_real_estate/rh_data_{yesterday_filedate}.txt"    
+    previous_hashes = load_previous_hashes(yesterday_filepath)
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+
+    filtered_list: list[dict] = []
+
+    for rent in rh_strings:
+        content = rent.get("content", "")
+        content_hash = md5_hash(content)
+        if content_hash not in previous_hashes:
+            filtered_list.append(rent)
+    print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+    # 중복 제거 로직 끝
+
     # 파일명 설정
     filename = f"txts/rh_real_estate/rh_data_{filedate}.txt"
 
     # 텍스트 파일로 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record in rh_strings:
+        for record in filtered_list:
             f.write(json.dumps(record, ensure_ascii=False))
             f.write("\n")  # 각 기록 사이에 줄바꿈 추가
 
@@ -265,14 +282,61 @@ def save_rh_rent_data_to_txt() -> None:
     # 파일명 설정
     filename = f"txts/rh_real_estate/rh_rent_data_{filedate}.txt"
 
+    # 중복 제거 로직 시작
+    yesterday = now - datetime.timedelta(days=1)
+    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"    
+    yesterday_filepath = f"txts/rh_real_estate/rh_rent_data_{yesterday_filedate}.txt"    
+    previous_hashes = load_previous_hashes(yesterday_filepath)
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")  
+    
+    filtered_list: list[dict] = []
+
+    for rent in rh_rent_strings:
+        content = rent.get("content", "")
+        content_hash = md5_hash(content)
+        if content_hash not in previous_hashes:
+            filtered_list.append(rent)
+    print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+    # 중복 제거 로직 끝
+
     # 텍스트 파일로 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record in rh_rent_strings:
+        for record in filtered_list:
             f.write(json.dumps(record, ensure_ascii=False))
             f.write("\n")  # 각 기록 사이에 줄바꿈 추가
 
     print(f"연립다세대 전월세 실거래가 데이터가 '{filename}' 파일로 저장되었습니다.")
 
+
+# 문자열의 MD5 해시값 계산 함수
+def md5_hash(text: str) -> str:
+    import hashlib
+    return hashlib.md5(text.encode('utf-8')).hexdigest()
+
+# 전날 txt에서 content만 읽어서 set으로 반환하는 함수
+def load_previous_hashes(filepath: str) -> set:
+    """전날 txt에서 content 해시만 읽어서 set으로 반환"""
+    if not os.path.exists(filepath):
+        return set()
+
+    hashes = set()
+    with open(filepath, 'r', encoding='utf-8') as f:
+        blocks = f.read().strip().split("\n")
+
+        for block in blocks:
+            block = block.strip()
+            if not block:
+                continue
+
+            try:
+                doc = json.loads(block)
+                content = doc.get("content", "")
+                content_hash = md5_hash(content)
+                hashes.add(content_hash)
+            except:
+                continue
+
+    return hashes
 
 # 스케줄 설정
 import schedule

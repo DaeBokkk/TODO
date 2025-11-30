@@ -126,11 +126,30 @@ def save_officetel_trade_data_to_txt() -> None:
 
     officetel_data = get_all_officetel_trade_data(ym)
     officetel_strings = return_officetel_string(officetel_data)
+
+    # 중복 로직 시작
+    # 전날 파일 경로
+    yesterday = now - datetime.timedelta(days=1)
+    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
+    yesterday_filepath = f"txts/officetel_real_estate/officetel_data_{yesterday_filedate}.txt"  
+    previous_hashes = load_previous_hashes(yesterday_filepath)
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    # 중복 제거 후 최종 저장할 데이터 리스트
+    filtered_list: list[dict] = []  
+
+    for record in officetel_strings:
+        content = record.get("content", "")
+        content_hash = md5_hash(content)
+        if content_hash not in previous_hashes:
+            filtered_list.append(record)
+    print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+    # 중복 로직 끝
+    #                 
     # txts/officetel_real_estate/ 폴더에 저장
     filename = f"txts/officetel_real_estate/officetel_data_{filedate}.txt"
     # 텍스트 파일로 생성해서 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record in officetel_strings:
+        for record in filtered_list:
             f.write(json.dumps(record, ensure_ascii=False))
             f.write("\n")  # 각 기록 사이에 줄바꿈 추가
     
@@ -248,14 +267,63 @@ def save_officetel_rent_data_to_txt() -> None:
     officetel_rent_data = get_all_officetel_rent_data(ym)
     officetel_rent_strings = return_officetel_rent_string(officetel_rent_data)
 
+    # 중복 로직 시작
+    # 전날 파일 경로
+    yesterday = now - datetime.timedelta(days=1)
+    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
+    yesterday_filepath = f"txts/officetel_real_estate/officetel_rent_data_{yesterday_filedate}.txt"  
+    previous_hashes = load_previous_hashes(yesterday_filepath)
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    # 중복 제거 후 최종 저장할 데이터 리스트
+    filtered_list: list[dict] = []
+
+    for record in officetel_rent_strings:
+        content = record.get("content", "")
+        content_hash = md5_hash(content)
+        if content_hash not in previous_hashes:
+            filtered_list.append(record)
+    print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+    # 중복 로직 끝
+
     filename = f"txts/officetel_real_estate/officetel_rent_data_{filedate}.txt"
     # 텍스트 파일로 생성해서 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record in officetel_rent_strings:
+        for record in filtered_list:
             f.write(json.dumps(record, ensure_ascii=False))
             f.write("\n")  # 각 기록 사이에 줄바꿈 추가
     
     print(f"오피스텔 전월세 거래 데이터가 '{filename}' 파일로 저장되었습니다.")
+
+
+# 문자열의 MD5 해시값 계산 함수
+def md5_hash(text: str) -> str:
+    import hashlib
+    return hashlib.md5(text.encode('utf-8')).hexdigest()
+
+# 전날 txt에서 content만 읽어서 set으로 반환하는 함수
+def load_previous_hashes(filepath: str) -> set:
+    """전날 txt에서 content 해시만 읽어서 set으로 반환"""
+    if not os.path.exists(filepath):
+        return set()
+
+    hashes = set()
+    with open(filepath, 'r', encoding='utf-8') as f:
+        blocks = f.read().strip().split("\n")
+
+        for block in blocks:
+            block = block.strip()
+            if not block:
+                continue
+
+            try:
+                doc = json.loads(block)
+                content = doc.get("content", "")
+                content_hash = md5_hash(content)
+                hashes.add(content_hash)
+            except:
+                continue
+
+    return hashes
 
 
 # 스케줄 설정

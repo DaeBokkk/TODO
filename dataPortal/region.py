@@ -47,7 +47,7 @@ def get_sgg_dict_for_region(region: str) -> dict:
         # '시/군/구' 레벨 필터링 (모든 지역 공통)
         df_filtered = df[
             (df['sgg_cd'] != '000') & 
-            (df['umd_cd'] == '000') & 
+            (df['umd_cd'] == '000') &
             (df['ri_cd'] == '00')
         ].copy() # SettingWithCopyWarning 방지를 위해 .copy() 추가
         
@@ -108,6 +108,7 @@ def get_full_lawd_code_dict() -> dict:
     except Exception as e:
         print(f"Error processing full lawd codes: {e}")
         return {}
+    
 
 # 출력 함수
 def print_full_lawd_code_dict_info(region_dict: dict):
@@ -119,14 +120,14 @@ def print_full_lawd_code_dict_info(region_dict: dict):
     print(f"총 갯수: {item_count} 개")
 
 # --- 스크립트 실행 ---
-if __name__ == "__main__":
+# if __name__ == "__main__":
     
-    print("=== 지역 코드 딕셔너리 수집 테스트 ===\n")
-    # 엑셀 파일로 저장
-    region_dict = get_full_lawd_code_dict()
-    print_full_lawd_code_dict_info(region_dict)
-    # df_region = pd.DataFrame(list(region_dict.items()), columns=['지역명', '법정동코드'])
-
+#     print("=== 지역 코드 딕셔너리 수집 테스트 ===\n")
+#     # 엑셀 파일로 저장
+#     region_dict = get_all_sgg_code_dict()
+#     df_region = pd.DataFrame(list(region_dict.items()), columns=['지역명', '법정동코드'])
+#     # 엑셀 파일로 저장
+#     df_region.to_excel("full_lawd_code_dict.xlsx", index=False)
 
 
 
