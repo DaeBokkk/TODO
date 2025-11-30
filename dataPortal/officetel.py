@@ -6,7 +6,8 @@ import os
 import sys
 import dotenv
 import datetime
-import region
+from dataPortal import region
+import json
 
 # 초기화
 dotenv.load_dotenv()
@@ -77,7 +78,7 @@ def get_all_officetel_trade_data(ym: str) -> list[dict]:
     return all_officetel_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
-def return_officetel_string(data: list[dict]) -> list[str]:
+def return_officetel_string(data: list[dict]) -> list[dict]:
     result_string: list[str] = []
     for record in data:
         record_str = (
@@ -100,7 +101,16 @@ def return_officetel_string(data: list[dict]) -> list[str]:
             f"매도자: {str(record.get('slerGbn', ''))}\n"
             f"매수자: {str(record.get('buyerGbn', ''))}\n"
         )
-        result_string.append(record_str)
+        
+        last_data = {
+            "metadata": {
+                "REGION_CODE": record.get('sggCd',''),
+                "ENACTMENT_DATA": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+            },
+            "content": record_str
+        }
+
+        result_string.append(last_data)
 
     return result_string
 
@@ -120,8 +130,9 @@ def save_officetel_trade_data_to_txt() -> None:
     filename = f"txts/officetel_real_estate/officetel_data_{filedate}.txt"
     # 텍스트 파일로 생성해서 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record_str in officetel_strings:
-            f.write(record_str + "\n")
+        for record in officetel_strings:
+            f.write(json.dumps(record, ensure_ascii=False))
+            f.write("\n")  # 각 기록 사이에 줄바꿈 추가
     
     print(f"오피스텔 거래 데이터가 '{filename}' 파일로 저장되었습니다.")
 
@@ -184,12 +195,12 @@ def get_all_officetel_rent_data(ym: str) -> list[dict]:
             all_officetel_rent_data.extend(officetel_rent_data)
             print(f"[{region_name} - {lawd_code}] 지역 오피스텔 전월세 거래 데이터 {len(officetel_rent_data)} 건 수집 완료.")
         except Exception as e:
-            print(f"Error fetching officetel rent data for {region_name} ({lawd_code}): {e}")
+            print(f"오류 발생 {region_name} ({lawd_code}): {e}")
     
     return all_officetel_rent_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
-def return_officetel_rent_string(data: list[dict]) -> list[str]:
+def return_officetel_rent_string(data: list[dict]) -> list[dict]:
     result_string: list[str] = []
     for record in data:
         record_str = (
@@ -211,7 +222,16 @@ def return_officetel_rent_string(data: list[dict]) -> list[str]:
             f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
             f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
         )
-        result_string.append(record_str)
+        
+        last_data = {
+            "metadata": {
+                "REGION_CODE": record.get('sggCd',''),
+                "ENACTMENT_DATA": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+            },
+            "content": record_str
+        }
+
+        result_string.append(last_data)
 
     return result_string
 
@@ -229,14 +249,28 @@ def save_officetel_rent_data_to_txt() -> None:
     officetel_rent_strings = return_officetel_rent_string(officetel_rent_data)
 
     filename = f"txts/officetel_real_estate/officetel_rent_data_{filedate}.txt"
+    # 텍스트 파일로 생성해서 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record_str in officetel_rent_strings:
-            f.write(record_str + "\n")
+        for record in officetel_rent_strings:
+            f.write(json.dumps(record, ensure_ascii=False))
+            f.write("\n")  # 각 기록 사이에 줄바꿈 추가
     
     print(f"오피스텔 전월세 거래 데이터가 '{filename}' 파일로 저장되었습니다.")
 
+
+# 스케줄 설정
+import schedule
+import time
+
+schedule.every(1).days.do(save_officetel_trade_data_to_txt)
+schedule.every(1).days.do(save_officetel_rent_data_to_txt)
 if __name__ == "__main__":
-    print("=== 오피스텔 매매 실거래가 데이터 수집 테스트 ===\n")
-    save_officetel_trade_data_to_txt()
-    print("\n=== 오피스텔 전월세 실거래가 데이터 수집 테스트 ===\n")
-    save_officetel_rent_data_to_txt()
+    # print("=== 오피스텔 매매 실거래가 데이터 수집 테스트 ===\n")
+    # save_officetel_trade_data_to_txt()
+    # print("\n=== 오피스텔 전월세 실거래가 데이터 수집 테스트 ===\n")
+    # save_officetel_rent_data_to_txt()
+    
+    while True:
+        schedule.run_pending()
+        # 30분 대기
+        time.sleep(30)

@@ -7,6 +7,7 @@ import sys
 import dotenv
 import datetime
 import region
+import json
 
 # 초기화
 dotenv.load_dotenv()
@@ -84,7 +85,7 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
     return all_land_data
 
 # 토지 거래 데이터 리스트를 문자열 리스트로 변환 함수
-def return_land_trade_string(data: list[dict]) -> list[str]:
+def return_land_trade_string(data: list[dict]) -> list[dict]:
     result_strings: list[str] = []
     for record in data:
         record_str = (
@@ -105,8 +106,19 @@ def return_land_trade_string(data: list[dict]) -> list[str]:
             f"거래유형: {str(record.get('dealingGbn',''))}\n"
             f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
         )
-        result_strings.append(record_str)
+
+        last_data = {
+            "metadata": {
+                "REGION_CODE": record.get('sggCd',''),
+                "ENACTMENT_DATA": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+            },
+            "content": record_str
+        }
+
+        result_strings.append(last_data)
+
     return result_strings
+
 
 # txt 파일로 저장하는 함수
 def save_land_trade_data_to_txt() -> None:
@@ -130,9 +142,9 @@ def save_land_trade_data_to_txt() -> None:
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/land_real_estate/land_data_{filedate}.txt" # 파일명 설정 -> real_estate/land_trade_data_YYYYMMDD.txt
     with open(filename, 'w', encoding='utf-8') as f:
-        for i, text in enumerate(text_strings):
-            f.write(text) # 텍스트 쓰기
-            f.write("\n") # 각 문서 구분을 위한 빈 줄 추가
+        for text in (text_strings):
+            f.write(json.dumps(text, ensure_ascii=False))
+            f.write("\n\n")  # 각 문서 구분을 위한 빈 줄 추가
     print(f"텍스트 파일로 저장 완료: {filename}")
 
 if __name__ == "__main__":

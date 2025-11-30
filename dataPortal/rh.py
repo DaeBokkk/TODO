@@ -2,11 +2,11 @@
 
 import requests
 import xmltodict
-import region
+from dataPortal import region
 import os 
 import dotenv
 import datetime
-
+import json
 # 초기화
 dotenv.load_dotenv()
 DATAGO_KEY = os.getenv("DATAGO_KEY")
@@ -79,7 +79,7 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
     return all_rh_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
-def return_rh_trade_string(data: list[dict]) -> list[str]:
+def return_rh_trade_string(data: list[dict]) -> list[dict]:
     result_string: list[str] = []
     for record in data:
         record_str = (
@@ -103,7 +103,17 @@ def return_rh_trade_string(data: list[dict]) -> list[str]:
             f"거래주체정보_매도자(개인/법인/공공기관/기타): {str(record.get('slerGbn',''))}\n"
             f"거래주체정보_매수자(개인/법인/공공기관/기타): {str(record.get('buyerGbn',''))}\n"
         )
-        result_string.append(record_str)
+
+        last_data = {
+            "metadata": {
+                "REGION_CODE": record.get('sggCd',''),
+                "ENACTMENT_DATA": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+            },
+            "content": record_str
+        }
+
+        result_string.append(last_data)
+
     return result_string
 
 # txt 파일로 저장하는 함수
@@ -126,8 +136,8 @@ def save_rh_trade_data_to_txt() -> None:
 
     # 텍스트 파일로 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record_str in rh_strings:
-            f.write(record_str)
+        for record in rh_strings:
+            f.write(json.dumps(record, ensure_ascii=False))
             f.write("\n")  # 각 기록 사이에 줄바꿈 추가
 
     print(f"연립다세대 매매 실거래가 데이터가 '{filename}' 파일로 저장되었습니다.")
@@ -202,7 +212,7 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
     return all_rh_rent_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
-def return_rh_rent_string(data: list[dict]) -> list[str]:   
+def return_rh_rent_string(data: list[dict]) -> list[dict]:   
     result_string: list[str] = []
     for record in data:
         record_str = (
@@ -224,7 +234,17 @@ def return_rh_rent_string(data: list[dict]) -> list[str]:
             f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
             f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
         )
-        result_string.append(record_str)
+
+        last_data = {
+            "metadata": {
+                "REGION_CODE": record.get('sggCd',''),
+                "ENACTMENT_DATA": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+            },
+            "content": record_str
+        }
+
+        result_string.append(last_data)
+
     return result_string
 
 # txt 파일로 저장하는 함수
@@ -247,15 +267,28 @@ def save_rh_rent_data_to_txt() -> None:
 
     # 텍스트 파일로 저장
     with open(filename, "w", encoding="utf-8") as f:
-        for record_str in rh_rent_strings:
-            f.write(record_str)
+        for record in rh_rent_strings:
+            f.write(json.dumps(record, ensure_ascii=False))
             f.write("\n")  # 각 기록 사이에 줄바꿈 추가
 
     print(f"연립다세대 전월세 실거래가 데이터가 '{filename}' 파일로 저장되었습니다.")
 
+
+# 스케줄 설정
+import schedule
+import time
+
+schedule.every(1).days.do(save_rh_trade_data_to_txt)
+schedule.every(1).days.do(save_rh_rent_data_to_txt)
+
 # --- 스크립트 실행 (Main Pipeline) ---
 if __name__ == "__main__":
-    print("=== 연립다세대 매매 실거래가 데이터 수집 테스트 ===\n")
-    save_rh_trade_data_to_txt()
-    print("\n=== 연립다세대 전월세 실거래가 데이터 수집 테스트 ===\n")
-    save_rh_rent_data_to_txt()
+    # print("=== 연립다세대 매매 실거래가 데이터 수집 테스트 ===\n")
+    # save_rh_trade_data_to_txt()
+    # print("\n=== 연립다세대 전월세 실거래가 데이터 수집 테스트 ===\n")
+    # save_rh_rent_data_to_txt()
+
+    while True:
+        schedule.run_pending()
+        # 30분 대기
+        time.sleep(1800)

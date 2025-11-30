@@ -7,7 +7,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 import time
 from bs4 import BeautifulSoup
-
+import json 
+import re
+from datetime import datetime
 # "부동산, 공동주택 분양 관련 모음집(AI RAG 버전)" 검색 키워드 
 
 def init_driver() -> webdriver.Chrome:
@@ -21,8 +23,28 @@ def init_driver() -> webdriver.Chrome:
     driver.get(url)
     return driver
 
+# 날짜 추출 함수
+def extract_enactment_date(text: str) -> str:
+    """
+    텍스트에서 '시행 20XX. X. X.' 패턴을 찾아 'YYYYMMDD' 형식으로 반환
+    실패 시 오늘 날짜 반환
+    """
+    try:
+        # 정규식: '시행' + 공백 + (숫자4개. 숫자1~2개. 숫자1~2개.)
+        match = re.search(r'시행\s+(\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\.)', text)
+        if match:
+            raw_date = match.group(1) # "2024. 5. 17."
+            # 날짜 파싱 (공백 유연하게 처리)
+            dt = datetime.strptime(raw_date.strip(), "%Y. %m. %d.")
+            return dt.strftime("%Y%m%d") # "20240517"
+    except Exception as e:
+        print(f"날짜 추출 중 오류: {e}")
+    
+    # 실패 시 기본값 (오늘 날짜)
+    return datetime.now().strftime("%Y%m%d")
+
 # 검색어 입력 및 검색 실행
-def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[str]:
+def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict]:
     # //*[@id="searchKeyword"]
     search_box = wait.until(EC.presence_of_element_located((By.ID, "searchKeyword")))
     search_box.clear()
@@ -61,6 +83,7 @@ def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[st
     # //*[@id="contents"]/div[2]/div/ul/li[110]/a
     # law_links에는 법령 링크들이 모두 들어있음
     law_links = wait.until(EC.presence_of_all_elements_located((By.XPATH, '//*[@id="contents"]/div[2]/div/ul/li/a')))
+    
     total_laws: list[str] = [] # 법령 본문 전체를 담을 리스트
     
     # 각 법령 링크를 순회하며 본문 크롤링
@@ -129,9 +152,17 @@ def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[st
             
             # 전체 법령 본문 텍스트 병합
             full_law_text = f"{title_elem_text}\n{info_elem_text}\n{subtitle_elem_texts}\n{content_elem_text}{sub_elem_text}"
-
+            # 날짜 추출
+            enactment_date = extract_enactment_date(info_elem_text)
+            total_laws_with_meta = {
+                "metadata": {
+                    "region_code": "전국",  # 예시: 경기도 지역 코드 # 향후 수정 필요 ex -> "41000"
+                    "enactment_date": enactment_date  # 추출된 법령 제정일
+                },
+                "content": full_law_text
+            }
+            total_laws.append(total_laws_with_meta)
             # 법령 본문 리스트에 추가
-            total_laws.append(full_law_text)
             print(f"법령 {i}번째 본문 내용 추출 (BeautifulSoup 사용)")
             # /////////////////////////////////////////////////////
             # 법령 본문 페이지 닫기
@@ -145,7 +176,7 @@ def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[st
     return total_laws
 
 # 문자열 리스트를 텍스트 파일로 저장
-def save_as_txt(law_texts: list[str]) -> None:
+def save_as_txt(law_texts: list[dict]) -> None:
     filename = "txts/laws/law_texts.txt"
     with open(filename, 'w', encoding="utf-8") as f:
         for i, text in enumerate(law_texts, start=1):
@@ -154,13 +185,22 @@ def save_as_txt(law_texts: list[str]) -> None:
             f.write(f"\n=== 법령 {i}번째 본문 끝 ===\n\n")
     print(f"법령 본문이 '{filename}' 파일로 저장되었습니다.")
 
+# 메타데이터 포함 전체 파이프라인 함수(region_code, enactment_date 포함)
+def save_as_txt_with_metadata(law_texts: list[dict]) -> None:
+    filename = "txts/laws/law_texts_with_metadata.txt"
+    # json 형식으로 저장
+    with open(filename, 'w', encoding="utf-8") as f:
+        for law in (law_texts):
+            f.write(json.dumps(law, ensure_ascii=False))
+            f.write("\n")  # 각 법령 사이에 줄바꿈 추가
 
 def main():
     driver = init_driver()
     wait = WebDriverWait(driver, 10)
 
     laws = search_law_keyword(driver, wait)
-    save_as_txt(laws)
+    # save_as_txt(laws)
+    save_as_txt_with_metadata(laws)
 
     driver.quit()
 

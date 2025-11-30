@@ -5,8 +5,8 @@ import xmltodict
 import os
 import dotenv
 import datetime
-import region
-
+from dataPortal import region
+import json
 # 초기화
 dotenv.load_dotenv()
 DATAGO_KEY = os.getenv("DATAGO_KEY")
@@ -78,7 +78,7 @@ def get_all_sm_trade_data(ym: str) -> list[dict]:
     return all_sm_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
-def return_sm_trade_string(data: list[dict]) -> list[str]:
+def return_sm_trade_string(data: list[dict]) -> list[dict]:
     result_string: list[str] = []
     for record in data:
         record_str = (
@@ -100,8 +100,14 @@ def return_sm_trade_string(data: list[dict]) -> list[str]:
             f"거래주체정보_매도자(개인/법인/공공기관/기타): {record.get('slerGbn','')}\n"
             f"거래주체정보_매수자(개인/법인/공공기관/기타): {record.get('buyerGbn','')}\n"
         )
-
-        result_string.append(record_str)
+        last_data = {
+            "metadata": {
+                "REGION_CODE": record.get('sggCd',''),
+                "ENACTMENT_DATA": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+            },
+            "content": record_str
+        }
+        result_string.append(last_data)
     return result_string
 
 # txt 파일로 저장하는 함수 구현
@@ -116,15 +122,18 @@ def save_sm_trade_data_to_txt() -> None:
     if not total_df:
         print(f"=== {ym} 기간에 조회된 단독/다가구 매매 실거래가 데이터가 전혀 없습니다. ===")
         return
-    
-    text_strings: list[str] = return_sm_trade_string(total_df)
+
+    text_strings: list[dict] = return_sm_trade_string(total_df)
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/sm_real_estate/sm_data_{filedate}.txt" # 파일명 설정 -> real_estate/sm_documents_YYYYMMDD.txt
+    
+    os.makedirs(os.path.dirname(filename), exist_ok=True) # 디렉토리 없으면 생성
+
     with open(filename, 'w', encoding='utf-8') as f:
         for text in (text_strings):
-            f.write(text) # 텍스트 쓰기
-            f.write("\n") # 각 문서 구분을 위한 빈 줄 추가
+            f.write(json.dumps(text, ensure_ascii=False))
+            f.write("\n")  # 각 문서 구분을 위한 빈 줄 추가
     print(f"텍스트 파일로 저장 완료: {filename}")
 
 # 단독 다가구 전월세 거래 api 호출 함수
@@ -194,7 +203,7 @@ def get_all_sm_rent_data(ym: str) -> list[dict]:
     return all_sm_rent_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
-def return_sm_rent_string(data: list[dict]) -> list[str]:
+def return_sm_rent_string(data: list[dict]) -> list[dict]:
     result_string: list[str] = []
     for record in data:
         record_str = (
@@ -215,7 +224,15 @@ def return_sm_rent_string(data: list[dict]) -> list[str]:
             f"종전계약월세(만원): {str(record.get('preMonthlyRent','')).replace(',', '')}\n"
         )
 
-        result_string.append(record_str)
+        last_data = {
+            "metadata": {
+                "REGION_CODE": record.get('sggCd',''),
+                "ENACTMENT_DATA": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+            },
+            "content": record_str
+        }
+
+        result_string.append(last_data)
     return result_string
 
 # txt 파일로 저장하는 함수 구현
@@ -231,20 +248,34 @@ def save_sm_rent_data_to_txt() -> None:
         print(f"=== {ym} 기간에 조회된 단독/다가구 전월세 실거래가 데이터가 전혀 없습니다. ===")
         return
     
-    text_strings: list[str] = return_sm_rent_string(total_df)
+    text_strings: list[dict] = return_sm_rent_string(total_df)
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/sm_real_estate/sm_rent_data_{filedate}.txt" # 파일명 설정 -> real_estate/sm_rent_documents_YYYYMMDD.txt
+
+    os.makedirs(os.path.dirname(filename), exist_ok=True) # 디렉토리 없으면 생성
+
     with open(filename, 'w', encoding='utf-8') as f:
         for text in (text_strings):
-            f.write(text) # 텍스트 쓰기
-            f.write("\n") # 각 문서 구분을 위한 빈 줄 추가
+            f.write(json.dumps(text, ensure_ascii=False))
+            f.write("\n")  # 각 문서 구분을 위한 빈 줄 추가
     print(f"텍스트 파일로 저장 완료: {filename}")
+
+# 스케줄 설정
+import schedule
+import time
+schedule.every(1).days.do(save_sm_trade_data_to_txt)
+schedule.every(1).days.do(save_sm_rent_data_to_txt)
 
 # --- 스크립트 실행 (Main Pipeline) ---
 if __name__ == "__main__":
-    # 단독/다가구 매매 실거래가 데이터 txt 파일로 저장
+    # # 단독/다가구 매매 실거래가 데이터 txt 파일로 저장
     save_sm_trade_data_to_txt()
     
-    # 단독/다가구 전월세 실거래가 데이터 txt 파일로 저장
+    # # 단독/다가구 전월세 실거래가 데이터 txt 파일로 저장
     save_sm_rent_data_to_txt()
+
+    while True:
+        schedule.run_pending()
+        # 30분 대기
+        time.sleep(1)

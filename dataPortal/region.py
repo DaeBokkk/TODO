@@ -7,6 +7,16 @@ from dotenv import load_dotenv
 # 환경변수 로드
 load_dotenv()
 
+# [추가된 부분] ---------------------------------------------------------
+# 현재 파일(region.py)의 위치를 기준으로 프로젝트 루트의 .env 찾기
+# 예: dataPortal/region.py -> 상위(루트)/.env
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(current_dir) # dataPortal의 상위 폴더
+env_path = os.path.join(root_dir, "dataPortal/.env")
+
+# .env 파일 로드
+load_dotenv(dotenv_path=env_path)
+
 # --- 1. 초기화 ---
 DATAGO_KEY = os.getenv("DATAGO_KEY")
 datago = Datagokr(DATAGO_KEY)

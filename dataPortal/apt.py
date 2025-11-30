@@ -1,12 +1,13 @@
 # 아파트 매매, 전월세 실거래가 데이터 수집 
 
 from langchain_core.documents import Document
-from apt import apt_sub
+from dataPortal.apt_list import apt_sub
 import datetime #  main에서 날짜 설정을 위해 임포트
 import pandas as pd
 import schedule
 import time
 import scheduler
+import json
 # 메인 파이프라인 스크립트 함수 구현
 def apt_api_documents_list() -> list[Document]:
     """
@@ -94,9 +95,9 @@ def save_apt_data_to_txt() -> None:
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/apt_real_estate/apt_data_{filedate}.txt" # 파일명 설정 -> real_estate/apt_documents_YYYYMMDD.txt
     with open(filename, 'w', encoding='utf-8') as f:
-        for i, text in enumerate(text_strings):
-            f.write(text) # 텍스트 쓰기
-            f.write("\n\n") # 각 문서 구분을 위한 빈 줄 추가
+        for text in (text_strings):
+            f.write(json.dumps(text, ensure_ascii=False))
+            f.write("\n")  # 각 문서 구분을 위한 빈 줄 추가
     print(f"텍스트 파일로 저장 완료: {filename}")
 
 # 전원세 문자열 리스트를 텍스트 파일로 저장하는 함수 (스케줄링 가능)
@@ -106,19 +107,21 @@ def save_apt_rent_data_to_txt():
     year = now.year
     month = now.month
     ym = f"{year}{month:02d}"
-
+    date = f"{year}{month:02d}{now.day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     rent_data = apt_sub.get_all_apt_rent_data(ym)
     rent_strings = apt_sub.return_apt_rent_string(rent_data)
 
-    filename = f"txts/apt_real_estate/apt_rent_data_{ym}.txt"
+    filename = f"txts/apt_real_estate/apt_rent_data_{date}.txt"
     with open(filename, 'w', encoding='utf-8') as f:
-        for s in rent_strings:
-            f.write(s + "\n\n")
+        for rent in (rent_strings):
+            f.write(json.dumps(rent, ensure_ascii=False))
+            f.write("\n")  # 각 문서 구분을 위한 빈 줄 추가
 
 # 스케줄링
-# 15일 마다 자동 실행(주기 설정 나중에 변경 가능)
-schedule.every(15).days.do(save_apt_rent_data_to_txt)
-schedule.every(15).days.do(save_apt_data_to_txt)
+# --- 스케줄러 설정 ---
+# 매일 1회 실행 (예: 매일 자정에 실행)
+schedule.every(1).days.do(save_apt_rent_data_to_txt)
+schedule.every(1).days.do(save_apt_data_to_txt)
 
 # --- 스크립트 실행 (Main Pipeline) ---
 if __name__ == "__main__":  
@@ -135,6 +138,7 @@ if __name__ == "__main__":
 
     # 방법 2 : Document 텍스트 파일로 저장 스케줄링
     save_apt_data_to_txt()
+    save_apt_rent_data_to_txt()
     while True:
         schedule.run_pending()
         time.sleep(1)
