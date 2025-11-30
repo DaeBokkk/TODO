@@ -87,14 +87,30 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     # 키보드 명령어 컨트롤 조합 명령어 윈도우일때 
     if platform.system() == "Windows":
         try:
-            search_begin_date.send_keys(Keys.CONTROL + "a")
+            search_begin_date.send_keys(Keys.CONTROL + "A")
             search_begin_date.send_keys(Keys.DELETE)
             search_begin_date.send_keys(today)
             search_begin_date.send_keys(Keys.ENTER)
             print(f"오늘날짜 {today} 입력했습니다.")
+
+            search_end_date.send_keys(Keys.CONTROL + "A")
+            search_end_date.send_keys(Keys.DELETE)
+            search_end_date.send_keys(today)
+            search_end_date.send_keys(Keys.ENTER)
         except Exception as e:
             print(f"오류: {e}")
+    
+    # 리눅스 
+    if platform.system() == "Linux":
+        search_begin_date.send_keys(Keys.CONTROL + "A")  # 키보드 명령어 컨트롤 조합 명령어 
+        search_begin_date.send_keys(Keys.DELETE)  # 내용 지우기 버튼 클릭
+        search_begin_date.send_keys(today)
+        search_begin_date.send_keys(Keys.ENTER)
 
+        search_end_date.send_keys(Keys.CONTROL + "A")  # 키보드 명령어 컨트롤 조합 명령어 
+        search_end_date.send_keys(Keys.DELETE)
+        search_end_date.send_keys(today)
+        search_end_date.send_keys(Keys.ENTER)
     # 내용 지우기 버튼 클릭
 
     ############################################# 언론사 선택 ##############################################################
