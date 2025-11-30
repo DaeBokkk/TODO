@@ -24,7 +24,7 @@ MODEL_DEVICE = "cpu"
 
 # 2. PostgreSQL DB 연결 정보
 DB_HOST = "0.tcp.jp.ngrok.io"
-DB_PORT = "16918"
+DB_PORT = "14453"
 DB_USER = "llm_user"
 DB_PASSWORD = "rag_db_password"
 DB_NAME = "rag_project_db"

@@ -74,7 +74,7 @@ def extract_metadata_and_clean(text: str, index: int) -> Dict[str, Any]:
     price_match = re.search(r'거래금액\s+([0-9억\s,]+)원', text)
     price_raw = price_match.group(1) if price_match else "Unknown"
     
-    # [메타데이터 추출 3] 고유 ID 생성 (RDB ID 시뮬레이션)
+    # [메타데이터 추출 3] 고유 ID 생성
     # 실제로는 DB의 Primary Key를 써야 하지만, 파일 처리이므로 해시값이나 인덱스로 대체
     # 여기서는 텍스트 내용 기반의 해시값을 생성하여 고유 ID로 사용 (중복 방지)
     doc_hash = hashlib.md5(text.encode()).hexdigest()[:10]
