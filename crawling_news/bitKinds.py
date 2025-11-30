@@ -216,7 +216,9 @@ def html_to_text_sel(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict
             wait.until(EC.presence_of_all_elements_located((By.XPATH, '//*[@id="news-results"]/div/div/div[2]/a/div/strong/span')))
             
             try:
-                item.click()
+                # 뉴스 아이템 클릭이 가능할때까지 대기 
+                clickable_item = wait.until(EC.element_to_be_clickable((By.XPATH, f'//*[@id="news-results"]/div/div/div[2]/a[{index + 1}]/div/strong/span')))
+                clickable_item.click()
                 print(f"{index + 1}번째 뉴스 아이템을 클릭했습니다.")
                 # 뉴스 제목 텍스트 추출 //*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[1]/h1
                 title_xpath = '//*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[1]/h1'
