@@ -156,7 +156,7 @@ def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[di
             enactment_date = extract_enactment_date(info_elem_text)
             total_laws_with_meta = {
                 "metadata": {
-                    "region_code": "전국",  # 예시: 경기도 지역 코드 # 향후 수정 필요 ex -> "41000"
+                    "region_code": "41000",  # 예시: 경기도 지역 코드 # 향후 수정 필요 ex -> "41000"
                     "enactment_date": enactment_date  # 추출된 법령 제정일
                 },
                 "content": full_law_text

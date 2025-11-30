@@ -215,9 +215,9 @@ def return_apt_string(df: pd.DataFrame) -> list[dict]:
             # --- 4. 데이터 구조화 (Rent 로직과 동일) ---
             last_data = {
                 "metadata": {
-                    "REGION_CODE": str(row['sggCd']),
+                    "region_code": str(row['sggCd']),
                     # YYYYMMDD 포맷으로 변환하여 메타데이터 저장
-                    "ENACTMENT_DATA": f"{year}{month}{day}"
+                    "enactment_date": f"{year}{month}{day}"
                 },
                 "content": text_chunk
             }
@@ -423,8 +423,8 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
             
             last_data = {
                 "metadata": {
-                    "REGION_CODE": item.get('sggCd',''),
-                    "ENACTMENT_DATA": f"{item.get('dealYear','')}{item.get('dealMonth','')}{item.get('dealDay','')}"
+                    "region_code": item.get('sggCd',''),
+                    "enactment_date": f"{item.get('dealYear','')}{item.get('dealMonth','')}{item.get('dealDay','')}"
                 },
                 "content": text_chunk
             }
