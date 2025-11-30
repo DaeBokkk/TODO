@@ -23,7 +23,7 @@ def trade_auto_collect():
 def crawl_law_texts():
     bitKinds.main()
 
-schedule.every().day.at("16:27").do(trade_auto_collect)
+schedule.every().day.at("21:20").do(trade_auto_collect) # 02:00 AM에 부동산 실거래가 수집 실행
 schedule.every().day.at("23:58").do(crawl_law_texts)
 
 if __name__ == "__main__":

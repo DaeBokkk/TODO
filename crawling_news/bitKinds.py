@@ -53,7 +53,7 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     # 오늘날짜일형식 20251116
     # 2025-11-16 형식으로 변환
     today = datetime.datetime.now().strftime("%Y-%m-%d")
-    today = "2025-11-22"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    today = "2025-11-27"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # //*[@id="ig-sd-btn"] xpath 클릭
     search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ig-sd-btn"]')))
     search_button.click()
@@ -138,6 +138,18 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="srch-tab3"]/ul/li[2]/ul/li[2]/div/span[3]/label/span')))
     search_button.click()
     print("부동산 선택 버튼을 클릭했습니다.")
+
+    # //*[@id="ds-modal"]/div[3]/div/div[2]/ul/li[6]/a 클릭
+    search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ds-modal"]/div[3]/div/div[2]/ul/li[6]/a')))  
+    search_button.click()
+    print("상세검색 적용 버튼을 클릭했습니다.")
+
+    # //*[@id="orKeyword1"] 클릭 후 부동산 입력
+    search_box = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="orKeyword1"]')))
+    search_box.clear()
+    search_box.send_keys("부동산")
+    print("검색어 '부동산'을 입력했습니다.")
+
     # //*[@id="ds-modal"]/div[3]/div/div[8]/div[2]/div/button[2] 클릭
     search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ds-modal"]/div[3]/div/div[8]/div[2]/div/button[2]')))
     search_button.click()
@@ -149,6 +161,24 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
 # 반환 타입 지정 list[dict] - 딕셔너리 구조 { "title": 제목, "body": 본문 }
 def html_to_text_sel(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict]:
     s_list = [] # 문자열 딕셔너리 리스트 초기화(뉴스 제목과 본문 저장용)
+    # 분석 제외 
+    # //*[@id="filterTab05"]/li[1]/span/label 클릭
+    # 분석 제외 (수정된 부분)
+    # ---------------------------------------------------------------------------
+    try:
+        # 1. 클릭 가능 여부(clickable) 대신 요소가 존재하는지(presence)만 확인합니다.
+        # (화면에 안 보여도 DOM에 있으면 찾아냄)
+        exclude_xpath = '//*[@id="filterTab05"]/li[1]/span/label'
+        exclude_button = wait.until(EC.presence_of_element_located((By.XPATH, exclude_xpath)))
+        
+        # 2. Selenium의 물리 클릭(.click()) 대신 JavaScript로 강제 클릭을 실행합니다.
+        driver.execute_script("arguments[0].click();", exclude_button)
+        
+        print("분석 제외 버튼을 클릭했습니다 (JS 실행).")
+        time.sleep(0.5) # 클릭 후 잠시 대기
+        
+    except Exception as e:
+        print(f"분석 제외 버튼 클릭 실패: {e}")
 
     # 1. 뉴스 아이템 로드 시도 (검색 결과가 0건일 경우 여기서 Timeout 발생)
     try:
@@ -329,7 +359,7 @@ def save_as_txt1(list_dict: list[dict]) -> None:
 def save_as_txt_with_metadata(list_dict: list[dict]) -> None: # region_code 차후에 수정
     news_list = list_dict # 리스트 딕셔너리(뉴스 제목과 본문)
     enactment_date = datetime.datetime.now().strftime("%Y%m%d") # 20251116 형식
-    enactment_date = "20251122"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    enactment_date = "20251127"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     region_code = "41000"  # 예시: 경기도 지역 코드 # 향후 수정 필요 ex -> "41000"
     # 파일명: news/bitkinds_news_20251116.txt ex) 2025년 11월 16일
     final_news_list = []

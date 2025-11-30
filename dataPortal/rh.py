@@ -107,7 +107,7 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),
-                "enactment_date": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+                "enactment_date": f"{str(record.get('dealYear',''))}{str(record.get('dealMonth','')).zfill(2)}{str(record.get('dealDay','')).zfill(2)}"
             },
             "content": record_str
         }
@@ -255,7 +255,7 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),
-                "enactment_date": f"{record.get('dealYear','')}{record.get('dealMonth','')}{record.get('dealDay','')}"
+                "enactment_date": f"{str(record.get('dealYear',''))}{str(record.get('dealMonth','')).zfill(2)}{str(record.get('dealDay','')).zfill(2)}"
             },
             "content": record_str
         }

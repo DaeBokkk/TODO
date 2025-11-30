@@ -334,6 +334,10 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
 
     for item in data:
         try:
+            # 날짜 패딩 처리 (1월 -> 01)
+            year = str(item['dealYear'])
+            month = str(item['dealMonth']).zfill(2)
+            day = str(item['dealDay']).zfill(2)
             # --- 1. 기본 정보 ---
             deal_date = f"{item.get('dealYear')}년 {item.get('dealMonth')}월 {item.get('dealDay')}일"
             dong = item.get('umdNm', '')
@@ -424,7 +428,7 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
             last_data = {
                 "metadata": {
                     "region_code": item.get('sggCd',''),
-                    "enactment_date": f"{item.get('dealYear','')}{item.get('dealMonth','')}{item.get('dealDay','')}"
+                    "enactment_date": f"{year}{month}{day}"
                 },
                 "content": text_chunk
             }
