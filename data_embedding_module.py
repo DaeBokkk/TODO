@@ -166,8 +166,9 @@ if __name__ == "__main__":
     ko_sbert_model = load_embedding_model()
 
     # --- [Mode 1] 데이터 색인 ---
-    file_path = 'apt_rent_data_20251130.txt' # 파일명 확인 필요
+    file_path = 'bitkinds_news_20251125.txt' # 파일명 확인 필요
     
+
     if os.path.exists(file_path):
         print("\n=== [Mode 1] 지식 기반 구축 (데이터 색인) ===")
         raw_texts = load_raw_jsonl_file(file_path)

@@ -68,7 +68,7 @@ def process_news_data(raw_item: Dict[str, Any], index: int) -> Dict[str, Any]:
     origin_meta = raw_item.get("metadata", {})
     content_text = raw_item.get("content", "")
 
-    # 2. 본문 텍스트 정제 (F-C1)
+    # 2. 본문 텍스트 정제
     # "제목:"과 "내용:" 태그를 제거하고 순수 텍스트로 결합하거나, 필요한 경우 분리
     # 여기서는 검색 효율을 위해 하나로 합치되 불필요한 태그만 제거합니다.
     cleaned_text = content_text.replace("제목:", "").replace("내용:", "\n")
@@ -137,7 +137,7 @@ def create_and_chunk_documents(raw_data_list: List[Dict[str, Any]]) -> List[Docu
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     # 파일 경로 (업로드한 파일명)
-    file_path = 'apt_rent_data_20251129.txt'
+    file_path = 'apt_rent_data_20251130.txt'
     
     print("--- [1단계] JSONL 파일 로드 ---")
     raw_data = load_raw_jsonl_file(file_path)
