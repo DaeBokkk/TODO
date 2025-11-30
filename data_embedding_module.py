@@ -10,7 +10,7 @@ from langchain_community.vectorstores import PGVector
 
 # 이전 단계에서 만든 청킹 모듈을 가져온다.
 try:
-    from data_chunking_module import load_raw_text_file, create_and_chunk_documents
+    from data_chunking_module import load_raw_jsonl_file, create_and_chunk_documents
 except ImportError:
     pass # 메인 실행이 아닐 경우를 대비해 에러 무시
 
@@ -129,12 +129,12 @@ if __name__ == "__main__":
     ko_sbert_model = load_embedding_model()
 
     # --- 데이터 색인 (지식 기반 구축) ---
-    file_path = 'apt_data_20251121.txt'
+    file_path = 'bitkinds_news_20251129_with_metadata.txt'
     
     # 파일이 존재하면 로드 및 색인 진행
     if os.path.exists(file_path):
         print("\n--- [Mode 1] 지식 기반 구축 (데이터 색인) ---")
-        raw_texts = load_raw_text_file(file_path)
+        raw_texts = load_raw_jsonl_file(file_path)
         final_chunks = create_and_chunk_documents(raw_texts)
         
         # DB에 저장
