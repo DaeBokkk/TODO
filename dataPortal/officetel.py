@@ -101,6 +101,17 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
             f"매도자: {str(record.get('slerGbn', ''))}\n"
             f"매수자: {str(record.get('buyerGbn', ''))}\n"
         )
+
+        # 위에 문장을 자연스러운 문장으로 변환 ex "2025년 11월 15일에 거래된 오피스텔 매매 실거래가 정보입니다. ..."
+        # record_str = (
+        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 거래된 오피스텔 매매 실거래가 정보입니다.\n"
+        #     f"지역코드: {str(record.get('sggCd',''))}, 시군구: {str(record.get('sggNm',''))}, 법정동명: {str(record.get('umdNm',''))}, 지번: {str(record.get('jibun',''))}.\n"
+        #     f"단지명은 {str(record.get('offiNm', ''))}, 전용면적은 {str(record.get('excluUseAr', ''))}㎡입니다.\n"
+        #     f"거래금액은 {str(record.get('dealAmount','')).replace(',', '')}만원이며, 층수는 {str(record.get('floor', ''))}층입니다.\n"
+        #     f"건축년도는 {str(record.get('buildYear', ''))}년이며, 해제여부는 {str(record.get('cdealType',''))}, 해제사유발생일은 {str(record.get('cdealDay',''))}입니다.\n"
+        #     f"거래유형은 {str(record.get('dealingGbn',''))}, 중개사소재지는 {str(record.get('estateAgentSggNm',''))}입니다.\n"
+        #     f"매도자 구분은 {str(record.get('slerGbn', ''))}, 매수자 구분은 {str(record.get('buyerGbn', ''))}입니다.\n"
+        # )
         
         last_data = {
             "metadata": {

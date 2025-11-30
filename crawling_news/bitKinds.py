@@ -33,27 +33,36 @@ def init_driver() -> webdriver.Chrome:
 
 # 메인 페이지 팝업창 2개 처리 함수
 def popup_handling(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
+    # try:
+    #     popup1_close_xpath = '//*[@id="popup-dialog-127"]/div/div[2]/div/div[2]/button'
+    #     close_button1 = wait.until(EC.element_to_be_clickable((By.XPATH, popup1_close_xpath)))
+    #     close_button1.click()
+    #     print("첫 번째 팝업을 닫았습니다.")
+    # except Exception as e:
+    #     print(f"첫 번째 팝업 닫기 실패: {e}")
+    # try:
+    #     popup2_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
+    #     close_button2 = wait.until(EC.element_to_be_clickable((By.XPATH, popup2_close_xpath)))
+    #     close_button2.click()
+    #     print("두 번째 팝업을 닫았습니다.")
+    # except Exception as e:
+    #     print(f"두 번째 팝업 닫기 실패: {e}")
+    
     try:
-        popup1_close_xpath = '//*[@id="popup-dialog-127"]/div/div[2]/div/div[2]/button'
-        close_button1 = wait.until(EC.element_to_be_clickable((By.XPATH, popup1_close_xpath)))
-        close_button1.click()
-        print("첫 번째 팝업을 닫았습니다.")
+        # //*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button
+        popup3_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
+        close_button3 = wait.until(EC.element_to_be_clickable((By.XPATH, popup3_close_xpath)))
+        close_button3.click()
+        print("팝업을 닫았습니다.")
     except Exception as e:
-        print(f"첫 번째 팝업 닫기 실패: {e}")
-    try:
-        popup2_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
-        close_button2 = wait.until(EC.element_to_be_clickable((By.XPATH, popup2_close_xpath)))
-        close_button2.click()
-        print("두 번째 팝업을 닫았습니다.")
-    except Exception as e:
-        print(f"두 번째 팝업 닫기 실패: {e}")
+        print(f"팝업 닫기 실패: {e}")
 
 # 검색 키워드 입력 및 필터 설정
 def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     # 오늘날짜일형식 20251116
     # 2025-11-16 형식으로 변환
     today = datetime.datetime.now().strftime("%Y-%m-%d")
-    # today = "2025-11-28"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    today = "2025-11-26"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # //*[@id="ig-sd-btn"] xpath 클릭
     search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ig-sd-btn"]')))
     search_button.click()
@@ -176,169 +185,143 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
 # search 결과에 나온 각각의 뉴스들을 텍스트로 변환
 # 반환 타입 지정 list[dict] - 딕셔너리 구조 { "title": 제목, "body": 본문 }
 def html_to_text_sel(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict]:
-    s_list = [] # 문자열 딕셔너리 리스트 초기화(뉴스 제목과 본문 저장용)
-    # 분석 제외 
-    # //*[@id="filterTab05"]/li[1]/span/label 클릭
-    # 분석 제외 (수정된 부분)
+    s_list = [] 
+    
     # ---------------------------------------------------------------------------
+    # 1. 분석 제외 버튼 처리 (JS 강제 클릭 적용)
     try:
-        # 1. 클릭 가능 여부(clickable) 대신 요소가 존재하는지(presence)만 확인합니다.
-        # (화면에 안 보여도 DOM에 있으면 찾아냄)
         exclude_xpath = '//*[@id="filterTab05"]/li[1]/span/label'
+        # 화면에 안 보여도 DOM에 있으면 찾도록 presence_of_element_located 사용
         exclude_button = wait.until(EC.presence_of_element_located((By.XPATH, exclude_xpath)))
-        
-        # 2. Selenium의 물리 클릭(.click()) 대신 JavaScript로 강제 클릭을 실행합니다.
         driver.execute_script("arguments[0].click();", exclude_button)
-        
         print("분석 제외 버튼을 클릭했습니다 (JS 실행).")
-        time.sleep(0.5) # 클릭 후 잠시 대기
-        
+        time.sleep(0.5) 
     except Exception as e:
-        print(f"분석 제외 버튼 클릭 실패: {e}")
+        print(f"분석 제외 버튼 클릭 실패(무시): {e}")
+    # ---------------------------------------------------------------------------
 
-    # 1. 뉴스 아이템 로드 시도 (검색 결과가 0건일 경우 여기서 Timeout 발생)
+    # 2. 뉴스 검색 결과 대기
+    # 공통으로 사용할 뉴스 아이템의 XPath입니다.
+    base_item_xpath = '//*[@id="news-results"]/div/div/div[2]/a/div/strong/span'
+    
     try:
-        # 뉴스 아이템들이 로드될 때까지 대기 (기존 로직)
         print("뉴스 검색 결과를 기다리고 있습니다...")
-        news_items = wait.until(EC.presence_of_all_elements_located((By.XPATH, '//*[@id="news-results"]/div/div/div[2]/a/div/strong/span')))
-        print(f"현재 페이지의 뉴스 아이템 수: {len(news_items)}")
-        
+        wait.until(EC.presence_of_all_elements_located((By.XPATH, base_item_xpath)))
     except TimeoutException:
-        # 10초 동안 기다려도 뉴스 아이템이 안 뜨면 검색 결과가 없는 것으로 간주
         print(">>> 검색된 뉴스가 없습니다. (빈 리스트 반환)")
-        return []  # 빈 리스트 반환 후 함수 종료
+        return []
 
     while True:
-        # //*[@id="news-results"]/div[1]/div/div[2]/a/div/strong/span
-        # //*[@id="news-results"]/div/div/div[2]/a/div/strong/span 뉴스 아이템들 로드 대기
-        # 모든 뉴스 아이템들이 로드될 때까지 대기
-        # 3번 재시도 로직 추가
-        for attempt in range(3): 
-            news_items = wait.until(EC.presence_of_all_elements_located((By.XPATH, '//*[@id="news-results"]/div/div/div[2]/a/div/strong/span'))) # 뉴스 아이템들 로드 대기
-            print(f"현재 페이지의 뉴스 아이템 수: {len(news_items)}")
-            if news_items:
-                break
-            else:
-                print(f"뉴스 아이템이 로드되지 않았습니다. {attempt + 1}번째 재시도 중")
-                time.sleep(2)  # 2초 대기 후 재시도
-        else:
-            print("뉴스 아이템을 로드하지 못했습니다. 크롤링을 종료합니다.")
-            break  # 뉴스 아이템을 로드하지 못했으면 루프 종료
+        # [단계 1] 페이지 내 뉴스 개수 파악
+        try:
+            # 개수만 세고 객체(element)는 변수에 저장하지 않습니다 (Stale 에러 방지용)
+            news_items_temp = wait.until(EC.presence_of_all_elements_located((By.XPATH, base_item_xpath)))
+            count = len(news_items_temp)
+            print(f"현재 페이지의 뉴스 아이템 수: {count}")
+        except:
+            print("뉴스 아이템을 찾을 수 없습니다. 다음 페이지 또는 종료.")
+            break
 
-        for index, item in enumerate(news_items):   
-            # 각 뉴스 아이템 클릭 후 문자열 수집 
-            # 뉴스 아이템 클릭 전까지 대기
-            # 뉴스 아이템이 모두 로드될 때까지 대기
-            wait.until(EC.presence_of_all_elements_located((By.XPATH, '//*[@id="news-results"]/div/div/div[2]/a/div/strong/span')))
+        # [단계 2] 인덱스로 순회 (enumerate 대신 range 사용이 훨씬 안정적입니다)
+        # 중요: 리스트를 돌리는게 아니라 0, 1, 2... 숫자로 돌립니다.
+        for i in range(count):
+            # === [핵심 로직: 재시도 + JS 강제 클릭] ===
+            success = False
+            for attempt in range(3): # 최대 3번 시도
+                try:
+                    # 1. 클릭 직전에 요소를 '새로' 찾습니다. (Stale 방지)
+                    # XPath 인덱싱 사용: (XPath)[1], (XPath)[2] ... 순서로 찾음
+                    # XPath 인덱스는 1부터 시작하므로 i+1
+                    target_xpath = f'({base_item_xpath})[{i+1}]'
+                    
+                    item = wait.until(EC.presence_of_element_located((By.XPATH, target_xpath)))
+                    # 2. [문제 해결] 요소가 클릭 가능할 때까지 대기
+                    wait.until(EC.element_to_be_clickable((By.XPATH, target_xpath)))
+
+                    # 3. [문제 해결] JavaScript로 강제 클릭 (Intercept 에러 해결)
+                    # 일반 click() 대신 JS로 직접 클릭 신호를 보냅니다.
+                    driver.execute_script("arguments[0].click();", item)
+                    
+                    print(f"{i + 1}번째 뉴스 아이템을 클릭했습니다.")
+                    success = True
+                    break # 성공 시 재시도 루프 탈출
+                except Exception as e:
+                    print(f"클릭 시도 {attempt+1}/3 실패: {e}")
+                    time.sleep(1)
             
+            if not success:
+                print(f"!!! {i+1}번째 뉴스는 클릭할 수 없어 건너뜁니다.")
+                continue
+            # ============================================
+
+            # --- 상세 페이지 크롤링 (기존 로직 유지) ---
             try:
-                # 뉴스 아이템 클릭이 가능할때까지 대기 
-                clickable_item = wait.until(EC.element_to_be_clickable((By.XPATH, f'//*[@id="news-results"]/div/div/div[2]/a[{index + 1}]/div/strong/span')))
-                clickable_item.click()
-                print(f"{index + 1}번째 뉴스 아이템을 클릭했습니다.")
-                # 뉴스 제목 텍스트 추출 //*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[1]/h1
+                # 제목 추출
                 title_xpath = '//*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[1]/h1'
-                # 뉴스 제목이 비어있지 않을 때까지 대기
                 article_title = wait.until(lambda d: d.find_element(By.XPATH, title_xpath) 
                                            if d.find_element(By.XPATH, title_xpath).text.strip() != "" 
-                                           else False
-                                           )
-                print(f"뉴스 제목: {article_title.text}")
+                                           else False)
+                # print(f"뉴스 제목: {article_title.text}")
                 article_title_text = article_title.text
                 
-                # 기자와 신문사 정보 추출 (선택 사항)
-                # //*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[1]/div[1]/ul/li[2] 기자 
-                # //*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[1]/div[1]/ul/li[1] 신문사
-                # (현재는 사용하지 않음)
-                reporter_xpath = '//*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[1]/div[1]/ul/li[2]'
-                newspaper_xpath = '//*[@id="chkProviderImage"]/img' # onerror시 
+                # 본문 추출
+                body_xpath = '//*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[2]/div[2]' 
                 try:
-                    reporter_info = driver.find_element(By.XPATH, reporter_xpath).text
-                    newspaper_info = driver.find_element(By.XPATH, newspaper_xpath).text
-                    print(f"기자 정보: {reporter_info}, 신문사 정보: {newspaper_info}")
-                except Exception as e:
-                    print(f"기자 및 신문사 정보 추출 실패 (무시): {e}")
-
-                # 뉴스 본문 텍스트 추출 
-                # //*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[2]/div[2] 사진이 있을 경우의 본문
-                # //*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[2]/div 사진이 없을 경우의 본문
-
-                body_xpath = '//*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[2]/div[2]' # 사진이 있을 경우의 본문 
-                try:
-                    # 사진이 있을 경우의 본문 시도
                     article_body = wait.until(lambda d: d.find_element(By.XPATH, body_xpath) 
                                               if d.find_element(By.XPATH, body_xpath).text.strip() != "" 
-                                              else False
-                                              ) # 본문이 비어있지 않을 때까지 대기
-                except Exception as e:
-                    # 대체 본문 XPath 시도
-                    body_xpath_alt = '//*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[2]/div' # 사진이 없을 경우의 본문
+                                              else False)
+                except Exception:
+                    # 사진 없는 기사 등 대체 XPath
+                    body_xpath_alt = '//*[@id="news-detail-modal"]/div/div/div/div[1]/div/div[2]/div'
                     article_body = wait.until(lambda d: d.find_element(By.XPATH, body_xpath_alt) 
                                               if d.find_element(By.XPATH, body_xpath_alt).text.strip() != "" 
-                                              else False
-                                              ) # 본문이 비어있지 않을 때까지 대기
+                                              else False)
 
-                # --- 공백 정리 로직 (추가) ---
-                # 본문 텍스트에서 불필요한 공백 및 줄바꿈 제거
                 raw_body_text = article_body.text
-                cleaned_body_text = re.sub(r'\s+', ' ', raw_body_text).strip() # \s+는 모든 공백 문자(스페이스, 탭, 줄바꿈 등)를 의미
+                cleaned_body_text = re.sub(r'\s+', ' ', raw_body_text).strip()
                 
-                time.sleep(0.5)  # 페이지 로드 대기
+                time.sleep(1)  # 안정화를 위해 대기
                 
-                # 뉴스 모달 닫기
-                # 모달 닫기 버튼 클릭 //*[@id="news-detail-modal"]/div/div/div/button
-                # //*[@id="news-detail-modal"]/div/div/div/button
-                close_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="news-detail-modal"]/div/div/div/button')))
-                close_button.click()
+                # 모달 닫기 (닫기 버튼도 JS 클릭이 안전함)
+                close_btn_xpath = '//*[@id="news-detail-modal"]/div/div/div/button'
+                close_button = wait.until(EC.presence_of_element_located((By.XPATH, close_btn_xpath)))
+                driver.execute_script("arguments[0].click();", close_button)
                 print("뉴스 모달을 닫았습니다.")
                 
-                # 수집한 텍스트를 리스트에 추가
-                # 딕셔너리로 저장
-                news_dict = {
+                s_list.append({
                     "title": article_title_text,
                     "body": cleaned_body_text
-                }
-                # 뉴스 딕셔너리 리스트에 저장 
-                s_list.append(news_dict)
+                })
 
-                # 다음 페이지 로직처리
+                # 마우스 호버 초기화용 바디 클릭
                 try:
-                    # 'body' 태그(빈 공간)를 클릭하여 모든 호버 효과를 해제합니다.
-                    driver.find_element(By.TAG_NAME, 'body').click()
-                    print("빈 공간을 클릭하여 호버 효과를 초기화했습니다.")
-                    time.sleep(0.2) # 호버 효과가 사라지는 시간 대기
-                except Exception as e:
-                    print(f"빈 공간 클릭 실패 (무시): {e}")
+                    driver.find_element(By.XPATH, '//*[@id="news-results"]/div/div/div[2]/a/div/strong/span').click()   
+                except:
+                    pass
 
-                time.sleep(1)  # 페이지 로드 대기
             except Exception as e:
-                print(f"뉴스 아이템 처리 중 오류 발생: {e}")
-        
-        # --- 다음 페이지 로직 ---
-        # 더 안정적인 XPath로 '다음 페이지' 버튼을 찾습니다.
-        # title 속성을 사용하여 '다음 페이지' 버튼을 명확히 지정
-        # //a[contains(@class, 'page-next') and not(ancestor::div[contains(@class, 'disabled')])]
+                print(f"상세 내용 수집 중 오류 (건너뜀): {e}")
+                try:
+                    # 에러 시 닫기 버튼 강제 클릭 시도
+                    close_btn = driver.find_element(By.XPATH, '//*[@id="news-detail-modal"]/div/div/div/button')
+                    driver.execute_script("arguments[0].click();", close_btn)
+                except:
+                    pass
+                continue
+
+        # --- 다음 페이지 이동 ---
         try:
-            # 3. '활성화된' 다음 페이지 버튼을 찾습니다.
             next_button = driver.find_element(By.XPATH, "//a[contains(@class, 'page-next') and not(ancestor::div[contains(@class, 'disabled')])]")
-    
-            # 4. 버튼이 있으면 클릭하고 다음 페이지로 이동
-            # 직접 클릭 대신 자바스크립트로 클릭 실행
-            # 화면에 보이지 않아 해당 방법으로 대체함
-            driver.execute_script("arguments[0].click();", next_button) # 자바스크립트 클릭 사용
+            # 페이지 이동 버튼도 JS 클릭이 안전함
+            driver.execute_script("arguments[0].click();", next_button)
             print("다음 페이지로 이동합니다.")
-            time.sleep(5)  # 페이지 로드 대기
-            continue  # 다음 페이지로 계속 진행
-        
-        # 5. '다음 페이지' 버튼이 비활성화 상태이면 루프 종료
-        except NoSuchElementException: # 요소를 찾지 못했을 때 발생하는 예외 처리(클릭 버튼이 없다는 뜻)
-            # 6. '활성화된' 버튼을 찾지 못하면 (비활성화 상태이거나 마지막 페이지)
-            # NoSuchElementException 오류가 발생하며, 루프를 종료합니다.
+            time.sleep(1.5) # 페이지 로드 대기
+            
+        except NoSuchElementException:
             print("마지막 페이지에 도달했습니다. 크롤링을 종료합니다.\n")            
             break
 
-    return s_list         
-
+    return s_list
 
 # 문자열 리스트를 Document 객체 리스트로 변환
 def list_str_to_documents(text_list: list[dict]) -> list[Document]: # 매개변수 타입 힌트 추가 및 반환 타입 힌트 명시
@@ -377,7 +360,7 @@ def save_as_txt1(list_dict: list[dict]) -> None:
 def save_as_txt_with_metadata(list_dict: list[dict]) -> None: # region_code 차후에 수정
     news_list = list_dict # 리스트 딕셔너리(뉴스 제목과 본문)
     enactment_date = datetime.datetime.now().strftime("%Y%m%d") # 20251116 형식
-    # enactment_date = "20251129"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    enactment_date = "20251126"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     region_code = "41000"  # 예시: 경기도 지역 코드 # 향후 수정 필요 ex -> "41000"
     # 파일명: news/bitkinds_news_20251116.txt ex) 2025년 11월 16일
     final_news_list = []
@@ -431,7 +414,6 @@ if __name__ == "__main__":
     #     print(f"Title: {doc.metadata['title']}")
     #     print(f"Content: {doc.page_content}") 
     #     print("-" * 50)
-
     main()
     # 방법 2: txt 파일로 주기 (독단적으로 이 스크립트가 항시 실행중이어야함)
 

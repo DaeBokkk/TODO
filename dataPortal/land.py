@@ -108,6 +108,25 @@ def return_land_trade_string(data: list[dict]) -> list[dict]:
             f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
         )
 
+        # 문장화 
+        # ex 2023년 5월 15일 경기도 성남시 분당구 정자동 123-45번지 토지(지목: 대지, 용도지역: 제1종일반주거지역) 거래면적 250.5㎡, 거래금액 15000만원, 지분거래구분: 전부, 해제여부: 정상, 거래유형: 매매, 중개사소재지: 성남시 분당구
+        record_str = (
+            f"{str(record.get('dealYear',''))}년 "
+            f"{str(record.get('dealMonth',''))}월 "
+            f"{str(record.get('dealDay',''))}일 "
+            f"{str(record.get('sggNm',''))} "
+            f"{str(record.get('umdNm',''))} "
+            f"{str(record.get('jibun',''))}번지 "
+            f"토지(지목: {str(record.get('jimok',''))}, "
+            f"용도지역: {str(record.get('landUse',''))}) "
+            f"거래면적 {str(record.get('dealArea',''))}㎡, "
+            f"거래금액 {str(record.get('dealAmount','')).replace(',', '')}만원, "
+            f"지분거래구분: {str(record.get('shareDealingType',''))}, "
+            f"해제여부: {str(record.get('cdealType',''))}, "
+            f"거래유형: {str(record.get('dealingGbn',''))}, "
+            f"중개사소재지: {str(record.get('estateAgentSggNm',''))}"
+        )
+
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),

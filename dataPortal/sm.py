@@ -100,6 +100,18 @@ def return_sm_trade_string(data: list[dict]) -> list[dict]:
             f"거래주체정보_매도자(개인/법인/공공기관/기타): {record.get('slerGbn','')}\n"
             f"거래주체정보_매수자(개인/법인/공공기관/기타): {record.get('buyerGbn','')}\n"
         )
+
+        # 문장화
+        # ex 2025년 5월 12일에 서울특별시 강남구 역삼동에 위치한 단독주택(연면적 120.5㎡)이 5억 원에 매매 거래가 체결되었다. 건축년도는 2010년이다. 거래유형은 중개거래이며, 중개사소재지는 강남구이다. 매도자는 개인, 매수자도 개인이다.
+        # record_str = (
+        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 "
+        #     f"{record.get('umdNm','')}에 위치한 "
+        #     f"{record.get('houseType','')}주택(연면적 {record.get('totalFloorAr','')}㎡)이 "
+        #     f"{str(record.get('dealAmount','')).replace(',', '')}만원에 매매 거래가 체결되었다. "
+        #     f"건축년도는 {record.get('buildYear','')}년이다. "
+        #     f"거래유형은 {record.get('dealingGbn','')}이며, 중개사소재지는 {record.get('estateAgentSggNm','')}이다. "
+        #     f"매도자는 {record.get('slerGbn','')}, 매수자도 {record.get('buyerGbn','')}이다."
+        # )
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),
@@ -242,6 +254,23 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
             f"종전계약월세(만원): {str(record.get('preMonthlyRent','')).replace(',', '')}\n"
         )
 
+        # 문장화
+        # ex 2025년 5월 12일에 서울특별시 강남구 역삼동에 위치한 단독주택(연면적 120.5㎡)이 보증금 5000만원, 월세 50만원에 전월세 계약이 체결되었다. 건축년도는 2010년이며, 계약기간은 2년이다. 계약구분은 신규계약이며, 갱신요구권은 사용되지 않았다. 종전계약보증금은 4500만원, 종전계약월세는 45만원이었다.
+        # record_str = (
+        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 "
+        #     f"{record.get('umdNm','')}에 위치한 "
+        #     f"{record.get('houseType','')}(연면적 {record.get('totalFloorAr','')}㎡)이 "
+        #     f"보증금 {str(record.get('deposit','')).replace(',', '')}만원, "
+        #     f"월세 {str(record.get('monthlyRent','')).replace(',', '')}만원에 전월세 계약이 체결되었다. "
+        #     f"건축년도는 {record.get('buildYear','')}년이며, "
+        #     f"계약기간은 {record.get('contractTerm','')}이다. "
+        #     f"계약구분은 {record.get('contractType','')}이며, "
+        #     f"갱신요구권은 {record.get('useRRRight','')}하였다. "
+        #     f"종전계약보증금은 {str(record.get('preDeposit','')).replace(',', '')}만원, "
+        #     f"종전계약월세는 {str(record.get('preMonthlyRent','')).replace(',', '')}만원이었다."
+        # )
+
+        # 메타데이터 추가
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),

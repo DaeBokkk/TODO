@@ -104,6 +104,19 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
             f"거래주체정보_매수자(개인/법인/공공기관/기타): {str(record.get('buyerGbn',''))}\n"
         )
 
+        # 문장화
+        # ex 2025년 5월 12일에 서울특별시 강남구 역삼동에 위치한 연립다세대 '역삼타운' 전용면적 85.0㎡가 10층에서 5억5000만원에 매매 거래가 체결되었다. 건축년도는 2010년이며, 대지권면적은 50.0㎡이다. 거래유형은 중개거래이며, 중개사소재지는 강남구이다. 등기일자는 2025년 5월 15일이다. 매도자는 개인이며, 매수자도 개인이다.
+        # record_str = (
+        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 "
+        #     f"{str(record.get('umdNm',''))}에 위치한 연립다세대 '{str(record.get('mhouseNm', ''))}' "
+        #     f"전용면적 {str(record.get('excluUseAr',''))}㎡가 {str(record.get('floor', ''))}층에서 "
+        #     f"{str(record.get('dealAmount','')).replace(',', '')}만원에 매매 거래가 체결되었다. "
+        #     f"건축년도는 {str(record.get('buildYear', ''))}년이며, 대지권면적은 {str(record.get('landAr',''))}㎡이다. "
+        #     f"거래유형은 {str(record.get('dealingGbn',''))}이며, 중개사소재지는 {str(record.get('estateAgentSggNm',''))}이다. "
+        #     f"등기일자는 {str(record.get('rgstDate',''))}이다. "
+        #     f"매도자는 {str(record.get('slerGbn',''))}이며, 매수자도 {str(record.get('buyerGbn',''))}이다."
+        # )
+
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),
@@ -251,6 +264,23 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
             f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
             f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
         )
+
+        # 문장화
+        # ex 2025년 5월 12일에 서울특별시 강남구 역삼동에 위치한 연립다세대 '역삼타운' 전용면적 85.0㎡가 10층에서 보증금 2억5000만원, 월세 100만원에 전월세 거래가 체결되었다. 건축년도는 2010년이며, 계약기간은 2년이다. 계약구분
+        # record_str = (
+        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 "    
+        #     f"{str(record.get('umdNm',''))}에 위치한 연립다세대 '{str(record.get('mhouseNm', ''))}' "
+        #     f"전용면적 {str(record.get('excluUseAr',''))}㎡가 {str(record.get('floor', ''))}층에서 "
+        #     f"보증금 {str(record.get('deposit','')).replace(',', '')}만원, " # 억단위 처리로 바꾸자 
+        # 억단위 처리로 바꾸자(10,000 -> 1억)
+        # f"{str(int(int(record.get('deposit','').replace(',', '')) / 10000))}억원, "
+        #     f"월세 {str(record.get('monthlyRent','')).replace(',', '')}만원에 전월세 거래가 체결되었다. "
+        #     f"건축년도는 {str(record.get('buildYear', ''))}년이며, 계약기간은 {str(record.get('contractTerm',''))}이다. "
+        #     f"계약구분은 {str(record.get('contractType',''))}이며, "
+        #     f"갱신요구권사용은 {str(record.get('useRRRight',''))}이다. "
+        #     f"종전계약보증금은 {str(record.get('preDeposit',''))}만원, " # 억단위 처리로 바꾸자
+        #     f"종전계약월세는 {str(record.get('preMonthlyRent',''))}만원이다." 
+        # )
 
         last_data = {
             "metadata": {
