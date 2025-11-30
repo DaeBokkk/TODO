@@ -20,7 +20,7 @@ except ImportError:
 
 # (1) 임베딩 모델 설정
 MODEL_ID = "jhgan/ko-sbert-nli"
-MODEL_DEVICE = "cpu" 
+MODEL_DEVICE = "cpu"
 
 # (2) DB 연결 정보 (Ngrok 정보 반영)
 DB_HOST = "0.tcp.jp.ngrok.io"
