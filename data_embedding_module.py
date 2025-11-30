@@ -18,21 +18,21 @@ except ImportError:
 # [설계 설정] 임베딩 모델 및 DB 설정 (업데이트됨)
 # ------------------------------------------------------------------------------
 
-# 1. 사용할 임베딩 모델 ID (KO-SBERT)
+# 1. 사용할 임베딩 모델 ID (KO-SBERT) ID: jhgan/ko-sbert-nli
 MODEL_ID = "jhgan/ko-sbert-nli"
 MODEL_DEVICE = "cpu" 
 
 # 2. PostgreSQL DB 연결 정보
 DB_HOST = "0.tcp.jp.ngrok.io"
-DB_PORT = "14453"
-DB_USER = "llm_user"
-DB_PASSWORD = "rag_db_password"
-DB_NAME = "rag_project_db"
+DB_PORT = "10062"
+DB_USER = "rag"
+DB_PASSWORD = "rag"
+DB_NAME = "rag"
 
 DB_CONNECTION_STRING = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # 3. 벡터 DB 인덱스(테이블) 이름
-COLLECTION_NAME = "vector_index_ko_sbert"
+COLLECTION_NAME = "embedding_vector_ko_sbert"
 
 
 # ------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
     # --- 사용자 질문 테스트 (실시간 추론 시뮬레이션) ---
     print("\n--- [Mode 2] 사용자 질문 임베딩 테스트 ---")
-    test_question = "수원시 영통구 아파트 최근 시세는 얼마인가요?"
+    test_question = "강남 반포자이 최근 6개월 전세 시세 알려줘."
     
     # 질문 벡터화 함수 호출
     vector_result = embed_user_query(test_question, ko_sbert_model)

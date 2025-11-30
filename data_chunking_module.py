@@ -86,13 +86,12 @@ def process_news_data(raw_item: Dict[str, Any], index: int) -> Dict[str, Any]:
 
     # 고유 ID 생성 (해시 기반)
     doc_hash = hashlib.md5(content_text.encode()).hexdigest()[:10]
-    rdb_id = f"NEWS_{index}_{doc_hash}"
+    rdb_id = f"LAWS_{index}_{doc_hash}"
 
     final_metadata = {
         "rdb_id": rdb_id,
         "contract_date": formatted_date,  # enactment_date를 계약일/발행일로 매핑
-        "region_code": origin_meta.get("region_code"),
-        "source_type": "NEWS_RSS"
+        "region_code": origin_meta.get("region_code")
     }
 
     return {
