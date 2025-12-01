@@ -3,8 +3,6 @@
 import requests
 import json
 
-# [수정] 테스트할 때는 _debug 주소를 사용합니다.
-# 팀원에게는 _debug를 뺀 주소(기존 주소)를 알려주세요.
 url = "http://127.0.0.1:8000/hybrid_search_debug"
 
 payload = {

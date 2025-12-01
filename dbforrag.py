@@ -5,6 +5,7 @@ import sys
 from typing import Optional
 import psycopg 
 from psycopg_pool import ConnectionPool
+from dotenv import load_dotenv
 
 # [중요] 임베딩 모델 로딩(HuggingFaceEmbeddings) 코드는 모두 삭제되었습니다.
 # 이 파일은 오직 'DB 연결'과 'SQL 템플릿'만 관리합니다.
@@ -12,11 +13,21 @@ from psycopg_pool import ConnectionPool
 # ----------------------------------------------------
 # 1. DB 연결 정보 설정
 # ----------------------------------------------------
-os.environ.setdefault("PG_HOST", "0.tcp.jp.ngrok.io")
-os.environ.setdefault("PG_PORT", "15178")
-os.environ.setdefault("PG_USER", "rag")
-os.environ.setdefault("PG_PASSWORD", "rag")
-os.environ.setdefault("PG_DATABASE", "rag")
+# 1. .env 파일 로드 (같은 폴더에 있는 .env를 찾아서 읽음)
+load_dotenv()
+
+# 2. 환경변수에서 값 가져오기 (비밀번호 노출 X)
+# os.environ.get("변수명")을 쓰면 .env 내용을 가져옵니다.
+pg_host = os.environ.get("PG_HOST")
+pg_port = os.environ.get("PG_PORT")
+pg_user = os.environ.get("PG_USER")
+pg_password = os.environ.get("PG_PASSWORD")
+pg_database = os.environ.get("PG_DATABASE")
+
+# 값 확인용 (혹시 못 읽어오면 에러 내기 위함)
+if not pg_host:
+    print("❌ .env 파일을 찾을 수 없거나 내용이 비어있습니다.")
+    sys.exit(1)
 
 DB_URL_RAW = (
     f"host={os.environ['PG_HOST']} port={os.environ['PG_PORT']} "

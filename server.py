@@ -3,7 +3,7 @@
 from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any # [수정] Dict, Any 추가됨
+from typing import List, Optional, Dict, Any
 import time
 import uuid
 import psycopg 
