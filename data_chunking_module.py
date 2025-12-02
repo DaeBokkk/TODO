@@ -14,7 +14,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 CHUNK_SIZE = 512
 # 50 토큰: 뉴스 기사의 문맥 끊김 방지를 위한 중복 영역
 CHUNK_OVERLAP = 50
-
+# 아니
 # ------------------------------------------------------------------------------
 # 1. 데이터 로딩 (Data Loading - JSONL 지원)
 # ------------------------------------------------------------------------------
