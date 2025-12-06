@@ -86,7 +86,8 @@ def process_news_data(raw_item: Dict[str, Any], index: int) -> Dict[str, Any]:
 
     # 고유 ID 생성 (해시 기반)
     doc_hash = hashlib.md5(content_text.encode()).hexdigest()[:10]
-    rdb_id = f"RENT_{index}_{doc_hash}"
+    # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    rdb_id = f"NEWS_{index}_{doc_hash}"
 
     final_metadata = {
         "rdb_id": rdb_id,
