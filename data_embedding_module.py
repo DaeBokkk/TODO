@@ -57,42 +57,105 @@ def load_embedding_model() -> Embeddings:
     print(f"[System] 모델 로딩 완료 (소요시간: {end_time - start_time:.2f}초)")
 
     return embeddings
-# ------------------------------------------------------------------------------
-# 3. [핵심 수정] 기존 테이블에 데이터 저장 함수 (Custom Insert)
-# ------------------------------------------------------------------------------
-def save_to_existing_table(documents: List[Document], embeddings: Embeddings):
+# # ------------------------------------------------------------------------------
+# # 3. [핵심 수정] 기존 테이블에 데이터 저장 함수 (Custom Insert)
+# # ------------------------------------------------------------------------------
+# def save_to_existing_table(documents: List[Document], embeddings: Embeddings):
+#     """
+#     LangChain의 기본 PGVector 함수 대신, Raw SQL을 사용하여
+#     우리가 미리 만든 'DOCUMENT_CHUNK' 테이블에 직접 데이터를 삽입합니다.
+#     """
+#     if not documents:
+#         print("[Warning] 저장할 문서가 없습니다.")
+#         return
+
+#     print(f"\n[System] 데이터 임베딩 및 DB 저장 시작 (총 {len(documents)}개 청크)")
+    
+#     # 1. 텍스트 리스트 추출 (벡터화용)
+#     texts = [doc.page_content for doc in documents]
+    
+#     # 2. 일괄 임베딩 (Batch Embedding) - 속도 최적화
+#     print(" -> 텍스트 벡터화 진행 중...")
+#     start_embed = time.time()
+#     try:
+#         vectors = embeddings.embed_documents(texts)
+#     except Exception as e:
+#         print(f"[Error] 임베딩 실패: {e}")
+#         return
+#     print(f" -> 벡터화 완료 ({time.time() - start_embed:.2f}초)")
+
+#     # [확인용 출력] 첫 번째 데이터의 벡터값 일부 출력
+#     if vectors:
+#         print(f"** [Vector Sample] 첫 번째 청크 벡터(앞 5개): {vectors[0][:5]} ... (총 768차원)")
+
+#     # 3. DB 연결 및 Insert (SQL 실행)
+    
+#     # ERD 컬럼명에 맞춘 INSERT 쿼리 
+#         insert_sql = PGVector.from_documents(
+
+#             embedding=embeddings,
+#             documents=documents,
+#             collection_name=COLLECTION_NAME,
+#             connection_string=DB_CONNECTION_STRING,
+#             pre_delete_collection=False # 기존 데이터를 유지하고 추가.
+#             )
+        
+#     success_count = 0
+    
+#     try:
+#         with psycopg.connect(DB_CONNECTION_STRING) as conn:
+#             # 안전장치 1: pgvector 확장 활성화 확인
+#             with conn.cursor() as cur:
+#                  cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            
+#             print(" -> DB 삽입(Insert) 시작...")
+            
+#             with conn.cursor() as cur:
+#                 # 쿼리 실행
+#                 for i, doc in enumerate(documents):
+#                     metadata = doc.metadata
+#                     vector = vectors[i]
+                    
+#                     # 파라미터 매핑 (메타데이터 -> DB 컬럼)
+#                     # 메타데이터 키는 대소문자 구분 없이 가져오도록 설정
+#                     rdb_id = metadata.get("rdb_id") or metadata.get("RDB_ID") or ""
+#                     region_code = metadata.get("region_code") or metadata.get("REGION_CODE") or ""
+#                     contract_date = metadata.get("contract_date") or metadata.get("ENACTMENT_DATE") or ""
+                    
+#                     # 쿼리 실행 시 ERD 컬럼 순서와 타입에 맞춰 파라미터를 제공
+#                     cur.execute(insert_sql, (
+#                         rdb_id,
+#                         doc.page_content,
+#                         region_code,
+#                         contract_date,
+#                         vector
+#                     ))
+#                     success_count += 1
+                
+#                 conn.commit() # 최종 커밋
+
+#         print(f"[Success] 총 {success_count}건이 기존 테이블 '{COLLECTION_NAME}'에 저장되었습니다.")
+
+#     except Exception as e:
+#         print(f"❌ [DB Error] 데이터 저장 실패: {e}")
+#         print(" -> 힌트: 'DOCUMENT_CHUNK' 테이블의 컬럼명과 데이터 타입이 이 코드의 INSERT SQL과 일치하는지 확인하세요.")
+#         print(" -> 힌트: Ngrok 포트 번호가 정확한지 확인하세요.")
+# 2. 벡터 DB 저장 함수
+def save_to_vector_db(documents: List[Document], embeddings: Embeddings):
     """
-    LangChain의 기본 PGVector 함수 대신, Raw SQL을 사용하여
-    우리가 미리 만든 'DOCUMENT_CHUNK' 테이블에 직접 데이터를 삽입합니다.
+    청킹된 Document 리스트를 받아 벡터화한 후, PostgreSQL(pgvector)에 저장한다.
     """
     if not documents:
         print("[Warning] 저장할 문서가 없습니다.")
         return
 
-    print(f"\n[System] 데이터 임베딩 및 DB 저장 시작 (총 {len(documents)}개 청크)")
-    
-    # 1. 텍스트 리스트 추출 (벡터화용)
-    texts = [doc.page_content for doc in documents]
-    
-    # 2. 일괄 임베딩 (Batch Embedding) - 속도 최적화
-    print(" -> 텍스트 벡터화 진행 중...")
-    start_embed = time.time()
+    print(f"\n[System] 벡터 DB 저장 시작 (총 {len(documents)}개 청크)")
+    print(f" -> 대상 DB: {DB_HOST}:{DB_PORT} ({COLLECTION_NAME})")
+
     try:
-        vectors = embeddings.embed_documents(texts)
-    except Exception as e:
-        print(f"[Error] 임베딩 실패: {e}")
-        return
-    print(f" -> 벡터화 완료 ({time.time() - start_embed:.2f}초)")
-
-    # [확인용 출력] 첫 번째 데이터의 벡터값 일부 출력
-    if vectors:
-        print(f"** [Vector Sample] 첫 번째 청크 벡터(앞 5개): {vectors[0][:5]} ... (총 768차원)")
-
-    # 3. DB 연결 및 Insert (SQL 실행)
-    
-    # ERD 컬럼명에 맞춘 INSERT 쿼리 
-        insert_sql = PGVector.from_documents(
-
+        # PGVector.from_documents 메서드 사용
+        # 이 함수는 내부적으로 '임베딩 -> 벡터 변환 -> DB 연결 -> 데이터 삽입'을 모두 수행.
+        db = PGVector.from_documents(
             embedding=embeddings,
             documents=documents,
             collection_name=COLLECTION_NAME,
@@ -100,74 +163,11 @@ def save_to_existing_table(documents: List[Document], embeddings: Embeddings):
             pre_delete_collection=False # 기존 데이터를 유지하고 추가.
             )
         
-    success_count = 0
-    
-    try:
-        with psycopg.connect(DB_CONNECTION_STRING) as conn:
-            # 안전장치 1: pgvector 확장 활성화 확인
-            with conn.cursor() as cur:
-                 cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-            
-            print(" -> DB 삽입(Insert) 시작...")
-            
-            with conn.cursor() as cur:
-                # 쿼리 실행
-                for i, doc in enumerate(documents):
-                    metadata = doc.metadata
-                    vector = vectors[i]
-                    
-                    # 파라미터 매핑 (메타데이터 -> DB 컬럼)
-                    # 메타데이터 키는 대소문자 구분 없이 가져오도록 설정
-                    rdb_id = metadata.get("rdb_id") or metadata.get("RDB_ID") or ""
-                    region_code = metadata.get("region_code") or metadata.get("REGION_CODE") or ""
-                    contract_date = metadata.get("contract_date") or metadata.get("ENACTMENT_DATE") or ""
-                    
-                    # 쿼리 실행 시 ERD 컬럼 순서와 타입에 맞춰 파라미터를 제공
-                    cur.execute(insert_sql, (
-                        rdb_id,
-                        doc.page_content,
-                        region_code,
-                        contract_date,
-                        vector
-                    ))
-                    success_count += 1
-                
-                conn.commit() # 최종 커밋
-
-        print(f"[Success] 총 {success_count}건이 기존 테이블 '{COLLECTION_NAME}'에 저장되었습니다.")
+        print("[Success] 모든 데이터가 성공적으로 벡터 DB에 저장(색인)되었습니다.")
 
     except Exception as e:
-        print(f"❌ [DB Error] 데이터 저장 실패: {e}")
-        print(" -> 힌트: 'DOCUMENT_CHUNK' 테이블의 컬럼명과 데이터 타입이 이 코드의 INSERT SQL과 일치하는지 확인하세요.")
-        print(" -> 힌트: Ngrok 포트 번호가 정확한지 확인하세요.")
-# 2. 벡터 DB 저장 함수
-# def save_to_vector_db(documents: List[Document], embeddings: Embeddings):
-#     """
-#     청킹된 Document 리스트를 받아 벡터화한 후, PostgreSQL(pgvector)에 저장한다.
-#     """
-#     if not documents:
-#         print("[Warning] 저장할 문서가 없습니다.")
-#         return
-
-#     print(f"\n[System] 벡터 DB 저장 시작 (총 {len(documents)}개 청크)")
-#     print(f" -> 대상 DB: {DB_HOST}:{DB_PORT} ({COLLECTION_NAME})")
-
-#     try:
-#         # PGVector.from_documents 메서드 사용
-#         # 이 함수는 내부적으로 '임베딩 -> 벡터 변환 -> DB 연결 -> 데이터 삽입'을 모두 수행.
-        # db = PGVector.from_documents(
-        #     embedding=embeddings,
-        #     documents=documents,
-        #     collection_name=COLLECTION_NAME,
-        #     connection_string=DB_CONNECTION_STRING,
-        #     pre_delete_collection=False # 기존 데이터를 유지하고 추가.
-        #     )
-        
-#         print("[Success] 모든 데이터가 성공적으로 벡터 DB에 저장(색인)되었습니다.")
-
-#     except Exception as e:
-#         print(f"[Error] DB 저장 중 오류 발생: {e}")
-#         print(" -> 팁: Ngrok 터널이 열려 있는지, DB 계정 정보가 정확한지 확인하세요.")
+        print(f"[Error] DB 저장 중 오류 발생: {e}")
+        print(" -> 팁: Ngrok 터널이 열려 있는지, DB 계정 정보가 정확한지 확인하세요.")
 
 #  3. 사용자 질문 임베딩 함수 (Query Embedding)
 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
         final_chunks = create_and_chunk_documents(raw_texts)
 
         # DB에 저장
-        save_to_existing_table(final_chunks, ko_sbert_model)
+        save_to_vector_db(final_chunks, ko_sbert_model)
     else:
         print(f"\n[Info] '{file_path}' 파일이 없어 데이터 색인 과정을 건너뜁니다.")
 
