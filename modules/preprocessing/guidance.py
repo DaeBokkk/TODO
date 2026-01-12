@@ -4,7 +4,6 @@ class QueryGuidance:
 
     def detect_missing(self, extracted_data: dict) -> list:
         """
-        [설계서 3.4 & 팀장님 요청 반영]
         모든 필드를 개별적으로 엄격하게 검사합니다.
         """
         missing = []

@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any
 # 1. [전처리 단계] 사용자 질문 받아서 분석하기
 # ==========================================
 
-# 1-1. 전처리 요청 (Request) - 이름 변경: GenerateRequest -> PreprocessRequest
+# 1-1. 전처리 요청 (Request) - 이름 변경: PreprocessRequest
 class PromptParts(BaseModel):
     user: str = Field(..., description="사용자 질문")
     session_id: str = Field(..., description="사용자 식별 ID (예: user1)")
