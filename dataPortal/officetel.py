@@ -79,28 +79,106 @@ def get_all_officetel_trade_data(ym: str) -> list[dict]:
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
 def return_officetel_string(data: list[dict]) -> list[dict]:
-    result_string: list[str] = []
+    result_string: list[dict] = []
+    def get_val(key, default=''):
+        val = record.get(key)
+        return str(val).strip() if val is not None else default
+    
+    def fmt_money(val_str):
+            try:
+                # 쉼표 제거 및 공백 제거
+                clean_str = str(val_str).replace(',', '').strip()
+                if not clean_str: return "0"
+                    
+                val = int(clean_str)
+                if val == 0: return "0"
+                    
+                if val >= 10000:
+                    eok = val // 10000
+                    man = val % 10000
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"                    
+                return f"{val:,}만원"
+            except:
+                return "0원"
+        
     for record in data:
+        year = get_val('dealYear')
+        month = get_val('dealMonth').zfill(2)
+        day = get_val('dealDay').zfill(2)
+        deal_date = f"{year}년 {month}월 {day}일"
+
+        dong = get_val('umdNm')
+        jibun = get_val('jibun')
+        offi_name = get_val('offiNm')
+        floor = get_val('floor')
+        floor_str = f"{floor}층" if floor else "층수미상"
+        build_year = get_val('buildYear')
+        deal_amount = fmt_money(get_val('dealAmount', '0'))
+        
+        # --- 4. 면적 (평수 환산 포함) ---
+        area_raw = get_val('excluUseAr', '0')
+        try:
+            area_float = float(area_raw)
+            area_text = f"{area_float}㎡ (약 {area_float / 3.3058:.1f}평)"
+        except:
+            area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
+
+        dealing_type = get_val('dealingGbn', '정보없음') # 거래유형 직거래 or 중개거래 
+        estate_agent_location = get_val('estateAgentSggNm', '정보없음') # 중개사소재지
+        
+        cdeal_type = get_val('cdealType', '') # 해제여부
+        if cdeal_type == 'O':
+            cdeal_day = get_val('cdealDay','') # 해제사유발생일 ex 25.12.12 -> 2025년 12월 12일
+            yy, mm, dd = cdeal_day.split('.')
+            cdeal_date = f"20{yy}년 {mm.zfill(2)}월 {dd.zfill(2)}일"
+
         record_str = (
-            f"지역코드: {str(record.get('sggCd',''))}\n"
-            f"시군구: {str(record.get('sggNm',''))}\n"
-            f"법정동명: {str(record.get('umdNm',''))}\n"
-            f"지번: {str(record.get('jibun',''))}\n"
-            f"단지명: {str(record.get('offiNm', ''))}\n"
-            f"전용면적(㎡): {str(record.get('excluUseAr', ''))}\n"
-            f"계약년도: {str(record.get('dealYear',''))}\n"
-            f"계약월: {str(record.get('dealMonth',''))}\n"
-            f"계약일: {str(record.get('dealDay',''))}\n"
-            f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
-            f"층: {str(record.get('floor', ''))}\n"
-            f"건축년도: {str(record.get('buildYear', ''))}\n"
-            f"해제여부: {str(record.get('cdealType',''))}\n"
-            f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
-            f"거래유형: {str(record.get('dealingGbn',''))}\n"
-            f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
-            f"매도자: {str(record.get('slerGbn', ''))}\n"
-            f"매수자: {str(record.get('buyerGbn', ''))}\n"
+            f"[오피스텔 매매] | "
+            f"거래일자 : {deal_date} | "
+            f"법정동명 : {dong} | "
+            f"도로명주소 : {dong} {jibun} | "
+            f"단지명 : {offi_name} | "
+            f"층수 : {floor_str} | "
+            f"거래금액 : {deal_amount} | "
+            f"전용면적 : {area_text} | "
+            f"건축년도 : {build_year}년 | "
+            f"거래유형 : {dealing_type}"
         )
+        extras = []
+
+        if dealing_type == '중개거래':
+            extras.append(f"중개사소재지: {estate_agent_location}")
+
+        if cdeal_type == 'O':
+            extras.append("거래해제여부: 해제")
+            extras.append(f"해제사유발생일: {cdeal_date}")
+
+        extras.append(f"매도자구분: {get_val('slerGbn', '정보없음')}")
+        extras.append(f"매수자구분: {get_val('buyerGbn', '정보없음')}")
+
+        if extras:
+            record_str += " | " + " | ".join(extras)
+
+        # record_str = (
+        #     f"지역코드: {str(record.get('sggCd',''))}\n"
+        #     f"시군구: {str(record.get('sggNm',''))}\n"
+        #     f"법정동명: {str(record.get('umdNm',''))}\n"
+        #     f"지번: {str(record.get('jibun',''))}\n"
+        #     f"단지명: {str(record.get('offiNm', ''))}\n"
+        #     f"전용면적(㎡): {str(record.get('excluUseAr', ''))}\n"
+        #     f"계약년도: {str(record.get('dealYear',''))}\n"
+        #     f"계약월: {str(record.get('dealMonth',''))}\n"
+        #     f"계약일: {str(record.get('dealDay',''))}\n"
+        #     f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
+        #     f"층: {str(record.get('floor', ''))}\n"
+        #     f"건축년도: {str(record.get('buildYear', ''))}\n"
+        #     f"해제여부: {str(record.get('cdealType',''))}\n"
+        #     f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
+        #     f"거래유형: {str(record.get('dealingGbn',''))}\n"
+        #     f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
+        #     f"매도자: {str(record.get('slerGbn', ''))}\n"
+        #     f"매수자: {str(record.get('buyerGbn', ''))}\n"
+        # )
 
         # 위에 문장을 자연스러운 문장으로 변환 ex "2025년 11월 15일에 거래된 오피스텔 매매 실거래가 정보입니다. ..."
         # record_str = (
@@ -231,26 +309,142 @@ def get_all_officetel_rent_data(ym: str) -> list[dict]:
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
 def return_officetel_rent_string(data: list[dict]) -> list[dict]:
-    result_string: list[str] = []
+    result_string: list[dict] = []
+
+    def get_val(key, default=''):
+            val = record.get(key)
+            return str(val).strip() if val is not None else default
+
+    def fmt_money(val_str):
+            try:
+                # 쉼표 제거 및 공백 제거
+                clean_str = str(val_str).replace(',', '').strip()
+                if not clean_str: return "0"
+                    
+                val = int(clean_str)
+                if val == 0: return "0"
+                    
+                if val >= 10000:
+                    eok = val // 10000
+                    man = val % 10000
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
+                return f"{val:,}만원"
+            except:
+                return "0원"
+            
     for record in data:
+
+        year = get_val('dealYear')
+        month = get_val('dealMonth').zfill(2)
+        day = get_val('dealDay').zfill(2)
+        deal_date = f"{year}년 {month}월 {day}일"
+
+        dong = get_val('umdNm')
+        sgg = get_val('sggNm')
+        dongf = f"{sgg} {dong}"
+        jibun = get_val('jibun')
+        offi_name = get_val('offiNm')
+        floor = get_val('floor')
+        floor_str = f"{floor}층" if floor else "층수미상"
+        build_year = get_val('buildYear')
+
+        # --- 3. 전/월세 금액 처리 ---
+        dep_raw = get_val('deposit', '0')
+        mon_raw = get_val('monthlyRent', '0')
+            
+        dep_fmt = fmt_money(dep_raw)
+        mon_fmt = fmt_money(mon_raw)
+
+        # 월세 여부 판단 (월세 금액이 0보다 크면 월세)
+        try:
+            mon_raw = get_val('monthlyRent', '0')   
+            mon_int = int(mon_raw.replace(',', ''))
+        except:
+            mon_int = 0
+
+        if mon_int > 0:
+            deal_type = "월세"
+            price_text = f"보증금 {dep_fmt} / 월세 {mon_fmt}"
+        else:
+            deal_type = "전세"
+            price_text = f"전세금 {dep_fmt}"
+
+        # --- 4. 면적 (평수 환산 포함) ---
+        area_raw = get_val('excluUseAr', '0')
+        try:
+            area_float = float(area_raw)
+            area_text = f"{area_float}㎡ (약 {area_float / 3.3058:.1f}평)"
+        except:
+            area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
+
+        # --- 5. 계약 및 갱신 정보 ---
+        contract_type = get_val('contractType') # 신규/갱신/공백 계약구분 
+        term_raw = get_val('contractTerm')
+
+        if term_raw and '~' in term_raw:
+            try:
+                start, end = term_raw.split('~')
+                sy, sm = start.split('.')
+                ey, em = end.split('.')
+                term = f"20{sy}년 {sm.zfill(2)}월 ~ 20{ey}년 {em.zfill(2)}월"
+            except:
+                term = "정보없음"
+        else:
+            term = "정보없음"
+            
+        use_rr = get_val('useRRRight') # 사용/공백 갱신요구권
+            
+        # 갱신일 경우 종전 계약 정보 구성
+        prev_contract_str = ""
+        if contract_type == "갱신":
+            pre_dep_fmt = fmt_money(get_val('preDeposit', '0'))
+            pre_mon_fmt = fmt_money(get_val('preMonthlyRent', '0'))
+                
+            # 종전 월세가 있는지 확인
+            try:
+                pre_mon_int = int(get_val('preMonthlyRent', '0').replace(',', ''))
+            except:
+                pre_mon_int = 0
+
+            if pre_mon_int > 0: # 종전 월세가 있으면 월세   
+                prev_contract_str = f"종전계약보증금: {pre_dep_fmt} / 종전계약월세: {pre_mon_fmt}"
+            elif pre_dep_fmt != '0': # 종전 월세가 없으면 전세
+                prev_contract_str = f"종전계약전세금: {pre_dep_fmt}"
+            else:
+                prev_contract_str = "정보없음"
+
         record_str = (
-            f"지역코드: {str(record.get('sggCd',''))}\n"
-            f"시군구: {str(record.get('sggNm',''))}\n"
-            f"법정동명: {str(record.get('umdNm',''))}\n"
-            f"지번: {str(record.get('jibun',''))}\n"
-            f"단지명: {str(record.get('offiNm', ''))}\n"
-            f"전용면적(㎡): {str(record.get('excluUseAr', ''))}\n"
-            f"계약년도: {str(record.get('dealYear',''))}\n"
-            f"계약월: {str(record.get('dealMonth',''))}\n"
-            f"계약일: {str(record.get('dealDay',''))}\n"
-            f"보증금액(만원): {str(record.get('deposit','')).replace(',', '')}\n"
-            f"월세금액(만원): {str(record.get('monthlyRent','')).replace(',', '')}\n"
-            f"층: {str(record.get('floor', ''))}\n"
-            f"건축년도: {str(record.get('buildYear', ''))}\n"
-            f"계약기간: {str(record.get('contractTerm',''))}\n"
-            f"갱신요구권사용: {str(record.get('useRRRight',''))}\n"
-            f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
-            f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
+            # f"지역코드: {str(record.get('sggCd',''))}\n"
+            # f"시군구: {str(record.get('sggNm',''))}\n"
+            # f"법정동명: {str(record.get('umdNm',''))}\n"
+            # f"지번: {str(record.get('jibun',''))}\n"
+            # f"단지명: {str(record.get('offiNm', ''))}\n"
+            # f"전용면적(㎡): {str(record.get('excluUseAr', ''))}\n"
+            # f"계약년도: {str(record.get('dealYear',''))}\n"
+            # f"계약월: {str(record.get('dealMonth',''))}\n"
+            # f"계약일: {str(record.get('dealDay',''))}\n"
+            # f"보증금액(만원): {str(record.get('deposit','')).replace(',', '')}\n"
+            # f"월세금액(만원): {str(record.get('monthlyRent','')).replace(',', '')}\n"
+            # f"층: {str(record.get('floor', ''))}\n"
+            # f"건축년도: {str(record.get('buildYear', ''))}\n"
+            # f"계약기간: {str(record.get('contractTerm',''))}\n"
+            # f"갱신요구권사용: {str(record.get('useRRRight',''))}\n"
+            # f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
+            # f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
+            f"[오피스텔 전월세] | "
+            f"거래일자 : {deal_date} | "
+            f"법정동명 : {dongf} | "
+            f"도로명주소 : {dong} {jibun} | "
+            f"단지명 : {offi_name} | "
+            f"층수 : {floor_str} | "
+            f"계약구분 : {contract_type} | "
+            f"거래유형 : {deal_type} | "
+            f"거래금액 : {price_text} | "
+            f"계약기간 : {term} | "
+            f"종전계약 : {prev_contract_str or '정보없음'} | "
+            f"갱신요구권 : {'사용' if use_rr == '사용' else '미사용'} | "
+            f"전용면적 : {area_text} | "
+            f"건축년도 : {build_year}년"
         )
         
         last_data = {
@@ -337,19 +531,8 @@ def load_previous_hashes(filepath: str) -> set:
     return hashes
 
 
-# 스케줄 설정
-import schedule
-import time
-
-schedule.every(1).days.do(save_officetel_trade_data_to_txt)
-schedule.every(1).days.do(save_officetel_rent_data_to_txt)
 if __name__ == "__main__":
     # print("=== 오피스텔 매매 실거래가 데이터 수집 테스트 ===\n")
-    # save_officetel_trade_data_to_txt()
     # print("\n=== 오피스텔 전월세 실거래가 데이터 수집 테스트 ===\n")
-    # save_officetel_rent_data_to_txt()
-    
-    while True:
-        schedule.run_pending()
-        # 30분 대기
-        time.sleep(30)
+    save_officetel_trade_data_to_txt()
+    save_officetel_rent_data_to_txt()

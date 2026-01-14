@@ -80,42 +80,130 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
 def return_rh_trade_string(data: list[dict]) -> list[dict]:
-    result_string: list[str] = []
+    result_string: list[dict] = []
+
+    def get_val(key, default=''):
+            val = record.get(key)
+            return str(val).strip() if val is not None else default
+
+    def fmt_money(val_str):
+            try:
+                # 쉼표 제거 및 공백 제거
+                clean_str = str(val_str).replace(',', '').strip()
+                if not clean_str: return "0"
+                    
+                val = int(clean_str)
+                if val == 0: return "0"
+                    
+                if val >= 10000:
+                    eok = val // 10000
+                    man = val % 10000
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
+                return f"{val:,}만원"
+            except:
+                return "0원"
+
     for record in data:
+        # record_str = (
+        #     f"지역코드: {str(record.get('sggCd',''))}\n"
+        #     f"법정동명: {str(record.get('umdNm',''))}\n"
+        #     f"연립다세대명: {str(record.get('mhouseNm', ''))}\n"
+        #     f"지번: {str(record.get('jibun', ''))}\n"
+        #     f"건축년도: {str(record.get('buildYear', ''))}\n"
+        #     f"전용면적(㎡): {str(record.get('excluUseAr',''))}\n"
+        #     f"대지권면적(㎡): {str(record.get('landAr',''))}\n"
+        #     f"계약년도: {str(record.get('dealYear',''))}\n"
+        #     f"계약월: {str(record.get('dealMonth',''))}\n"
+        #     f"계약일: {str(record.get('dealDay',''))}\n"
+        #     f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
+        #     f"층: {str(record.get('floor', ''))}\n"
+        #     f"해제여부: {str(record.get('cdealType',''))}\n"
+        #     f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
+        #     f"거래유형(중개 및 직거래 여부): {str(record.get('dealingGbn',''))}\n"
+        #     f"중개사소재지(시군구 단위): {str(record.get('estateAgentSggNm',''))}\n"
+        #     f"등기일자: {str(record.get('rgstDate',''))}\n"
+        #     f"거래주체정보_매도자(개인/법인/공공기관/기타): {str(record.get('slerGbn',''))}\n"
+        #     f"거래주체정보_매수자(개인/법인/공공기관/기타): {str(record.get('buyerGbn',''))}\n"
+        # )
+        
+        year = get_val('dealYear')
+        month = get_val('dealMonth').zfill(2)
+        day = get_val('dealDay').zfill(2)
+        deal_date = f"{year}년 {month}월 {day}일"
+
+        dong = get_val('umdNm')
+        jibun = get_val('jibun')
+        mhouse_name = get_val('mhouseNm')
+        floor = get_val('floor')
+        floor_str = f"{floor}층" if floor else "층수미상"
+        deal_amount = fmt_money(get_val('dealAmount'))
+        build_year = get_val('buildYear')
+        cdeal_type = get_val('cdealType') # 해제여부 ex O or None
+        cdeal_date = get_val('cdealDay') # 해제사유발생일 ex 25.05.12 or '' to -> 2025년 05월 12일
+        dealing_gbn = get_val('dealingGbn')
+        estate_agent_sgg_nm = get_val('estateAgentSggNm')
+        rgst_date = get_val('rgstDate')
+        sler_gbn = get_val('slerGbn')
+        buyer_gbn = get_val('buyerGbn')
+        house_type = get_val('houseType')
+        area_raw = get_val('excluUseAr') # 전용면적
+        land_area_raw = get_val('landAr') # 대지권면적
+        
+        if cdeal_date:
+            try:
+                cdeal_year, cdeal_month, cdeal_day = cdeal_date.split('.')
+                cdeal_date = f"{int(cdeal_year)}년 {int(cdeal_month)}월 {int(cdeal_day)}일"
+            except:
+                cdeal_date = cdeal_date
+
+        try:
+            area_float = float(area_raw)
+            area_text = f"{area_float}㎡ (약 {area_float / 3.3058:.1f}평)"
+        except:
+            area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
+        
+        try:
+            land_area_float = float(land_area_raw)
+            land_area_text = f"{land_area_float}㎡ (약 {land_area_float / 3.3058:.1f}평)"
+        except:
+            land_area_text = f"{land_area_raw}㎡ (정보없음)"
+
         record_str = (
-            f"지역코드: {str(record.get('sggCd',''))}\n"
-            f"법정동명: {str(record.get('umdNm',''))}\n"
-            f"연립다세대명: {str(record.get('mhouseNm', ''))}\n"
-            f"지번: {str(record.get('jibun', ''))}\n"
-            f"건축년도: {str(record.get('buildYear', ''))}\n"
-            f"전용면적(㎡): {str(record.get('excluUseAr',''))}\n"
-            f"대지권면적(㎡): {str(record.get('landAr',''))}\n"
-            f"계약년도: {str(record.get('dealYear',''))}\n"
-            f"계약월: {str(record.get('dealMonth',''))}\n"
-            f"계약일: {str(record.get('dealDay',''))}\n"
-            f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
-            f"층: {str(record.get('floor', ''))}\n"
-            f"해제여부: {str(record.get('cdealType',''))}\n"
-            f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
-            f"거래유형(중개 및 직거래 여부): {str(record.get('dealingGbn',''))}\n"
-            f"중개사소재지(시군구 단위): {str(record.get('estateAgentSggNm',''))}\n"
-            f"등기일자: {str(record.get('rgstDate',''))}\n"
-            f"거래주체정보_매도자(개인/법인/공공기관/기타): {str(record.get('slerGbn',''))}\n"
-            f"거래주체정보_매수자(개인/법인/공공기관/기타): {str(record.get('buyerGbn',''))}\n"
+            f"[연립다세대 매매] | "
+            f"거래일자: {deal_date} | "
+            f"법정동명: {dong} | "
+            f"도로명주소 : {dong} {jibun} | "
+            f"연립다세대명: {mhouse_name} | "
+            f"전용면적: {area_text} | "
+            f"대지권면적: {land_area_text} | "
+            f"층수: {floor_str} | "
+            f"거래금액: {deal_amount} | "
+            f"전용면적: {area_raw} | "
+            f"건축년도: {build_year}년 | "
+            f"거래유형: {dealing_gbn} | "
+            f"매도자구분: {sler_gbn} | "
+            f"매수자구분: {buyer_gbn} | "
+            f"주택유형: {house_type}"
         )
 
-        # 문장화
-        # ex 2025년 5월 12일에 서울특별시 강남구 역삼동에 위치한 연립다세대 '역삼타운' 전용면적 85.0㎡가 10층에서 5억5000만원에 매매 거래가 체결되었다. 건축년도는 2010년이며, 대지권면적은 50.0㎡이다. 거래유형은 중개거래이며, 중개사소재지는 강남구이다. 등기일자는 2025년 5월 15일이다. 매도자는 개인이며, 매수자도 개인이다.
-        # record_str = (
-        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 "
-        #     f"{str(record.get('umdNm',''))}에 위치한 연립다세대 '{str(record.get('mhouseNm', ''))}' "
-        #     f"전용면적 {str(record.get('excluUseAr',''))}㎡가 {str(record.get('floor', ''))}층에서 "
-        #     f"{str(record.get('dealAmount','')).replace(',', '')}만원에 매매 거래가 체결되었다. "
-        #     f"건축년도는 {str(record.get('buildYear', ''))}년이며, 대지권면적은 {str(record.get('landAr',''))}㎡이다. "
-        #     f"거래유형은 {str(record.get('dealingGbn',''))}이며, 중개사소재지는 {str(record.get('estateAgentSggNm',''))}이다. "
-        #     f"등기일자는 {str(record.get('rgstDate',''))}이다. "
-        #     f"매도자는 {str(record.get('slerGbn',''))}이며, 매수자도 {str(record.get('buyerGbn',''))}이다."
-        # )
+        extras = []
+        if rgst_date: # ex 25.01.12
+            rgst_year, rgst_month, rgst_day = rgst_date.split('.')
+            rgst_date = f"20{(rgst_year)}년 {(rgst_month)}월 {(rgst_day)}일"
+            extras.append(f"등기일자: {rgst_date}")
+            
+        if dealing_gbn == '중개거래':
+            extras.append(f"중개사소재지: {estate_agent_sgg_nm}")
+
+        if cdeal_type == 'O':
+            extras.append("거래해제여부: 해제")
+            extras.append(f"해제사유발생일: {cdeal_date}")
+
+        extras.append(f"매도자구분: {get_val('slerGbn', '정보없음')}")
+        extras.append(f"매수자구분: {get_val('buyerGbn', '정보없음')}")
+
+        if extras:
+            record_str += " | " + " | ".join(extras)
 
         last_data = {
             "metadata": {
@@ -243,44 +331,140 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
 def return_rh_rent_string(data: list[dict]) -> list[dict]:   
-    result_string: list[str] = []
+    result_string: list[dict] = []
+
+    def get_val(key, default=''):
+            val = record.get(key)
+            return str(val).strip() if val is not None else default
+
+    def fmt_money(val_str):
+            try:
+                # 쉼표 제거 및 공백 제거
+                clean_str = str(val_str).replace(',', '').strip() 
+                if not clean_str: return "0" 
+                    
+                val = int(clean_str)
+                if val == 0: return "0"
+                    
+                if val >= 10000:
+                    eok = val // 10000
+                    man = val % 10000
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
+                return f"{val:,}만원"
+            except:
+                return "0원"
+
     for record in data:
+
+        # record_str = (
+        #     f"지역코드: {str(record.get('sggCd',''))}\n"
+        #     f"법정동명: {str(record.get('umdNm',''))}\n"
+        #     f"연립다세대명: {str(record.get('mhouseNm', ''))}\n"
+        #     f"지번: {str(record.get('jibun', ''))}\n"
+        #     f"건축년도: {str(record.get('buildYear', ''))}\n"
+        #     f"전용면적(㎡): {str(record.get('excluUseAr',''))}\n"
+        #     f"계약년도: {str(record.get('dealYear',''))}\n"
+        #     f"계약월: {str(record.get('dealMonth',''))}\n"
+        #     f"계약일: {str(record.get('dealDay',''))}\n"
+        #     f"보증금액(만원): {str(record.get('deposit','')).replace(',', '')}\n"
+        #     f"월세금액(만원): {str(record.get('monthlyRent','')).replace(',', '')}\n"
+        #     f"층: {str(record.get('floor', ''))}\n"
+        #     f"계약기간: {str(record.get('contractTerm',''))}\n"
+        #     f"계약구분: {str(record.get('contractType',''))}\n"
+        #     f"갱신요구권사용: {str(record.get('useRRRight',''))}\n"
+        #     f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
+        #     f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
+        # )
+
+        year = get_val('dealYear')
+        month = get_val('dealMonth').zfill(2)
+        day = get_val('dealDay').zfill(2)
+        deal_date = f"{year}년 {month}월 {day}일"
+
+        dong = get_val('umdNm')
+        jibun = get_val('jibun')
+        mhouse_name = get_val('mhouseNm')
+        floor = get_val('floor')
+        floor_str = f"{floor}층" if floor else "층수미상"
+        build_year = get_val('buildYear')
+        contract_type = get_val('contractType')
+        contract_term = get_val('contractTerm')
+        use_rr_right = get_val('useRRRight')
+        area_raw = get_val('excluUseAr') # 전용면적
+
+        try:
+            area_float = float(area_raw)
+            area_text = f"{area_float}㎡ (약 {area_float / 3.3058:.1f}평)"
+        except:
+            area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
+
+        # --- 5. 계약 및 갱신 정보 ---
+        contract_type = get_val('contractType') # 신규/갱신/공백 계약구분 
+        term_raw = get_val('contractTerm')
+
+        if term_raw and '~' in term_raw:
+            try:
+                start, end = term_raw.split('~')
+                sy, sm = start.split('.')
+                ey, em = end.split('.')
+                term = f"20{sy}년 {sm.zfill(2)}월 ~ 20{ey}년 {em.zfill(2)}월"
+            except:
+                term = "정보없음"
+        else:
+            term = "정보없음"
+            
+        use_rr = get_val('useRRRight') # 사용/공백 갱신요구권
+        if use_rr == '사용':
+            pass
+        else:
+            use_rr = "미사용"
+
+        # --- 3. 전/월세 금액 처리 ---
+        dep_raw = get_val('deposit', '0')
+        mon_raw = get_val('monthlyRent', '0')
+            
+        dep_fmt = fmt_money(dep_raw)
+        mon_fmt = fmt_money(mon_raw)
+        
+        # 월세 여부 판단 (월세 금액이 0보다 크면 월세)
+        try:
+            mon_raw = get_val('monthlyRent', '0')   
+            mon_int = int(mon_raw.replace(',', ''))
+        except:
+            mon_int = 0
+
+        if mon_int > 0:
+            deal_type = "월세"
+            price_text = f"보증금: {dep_fmt} / 월세: {mon_fmt}"
+        else:
+            deal_type = "전세"
+            price_text = f"전세금: {dep_fmt}"
+
+        preDeposit = fmt_money(get_val('preDeposit','')) # 종전계약보증금 (전세 or 보증금 or 0)
+        preMonthlyRent = fmt_money(get_val('preMonthlyRent','')) # 종전계약월세 (월세 or 0)
+            
         record_str = (
-            f"지역코드: {str(record.get('sggCd',''))}\n"
-            f"법정동명: {str(record.get('umdNm',''))}\n"
-            f"연립다세대명: {str(record.get('mhouseNm', ''))}\n"
-            f"지번: {str(record.get('jibun', ''))}\n"
-            f"건축년도: {str(record.get('buildYear', ''))}\n"
-            f"전용면적(㎡): {str(record.get('excluUseAr',''))}\n"
-            f"계약년도: {str(record.get('dealYear',''))}\n"
-            f"계약월: {str(record.get('dealMonth',''))}\n"
-            f"계약일: {str(record.get('dealDay',''))}\n"
-            f"보증금액(만원): {str(record.get('deposit','')).replace(',', '')}\n"
-            f"월세금액(만원): {str(record.get('monthlyRent','')).replace(',', '')}\n"
-            f"층: {str(record.get('floor', ''))}\n"
-            f"계약기간: {str(record.get('contractTerm',''))}\n"
-            f"계약구분: {str(record.get('contractType',''))}\n"
-            f"갱신요구권사용: {str(record.get('useRRRight',''))}\n"
-            f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
-            f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
+            f"[연립다세대 전월세] | "
+            f"거래일자: {deal_date} | "
+            f"법정동명: {dong} | "
+            f"도로명주소 : {dong} {jibun} | "
+            f"연립다세대명: {mhouse_name} | "
+            f"전용면적: {area_text} | "
+            f"층수: {floor_str} | " 
+            f"거래유형: {deal_type} | "
+            f"가격: {price_text} | "
+            f"건축년도: {build_year}년 | "
+            f"계약기간: {term} | "
+            f"계약구분: {contract_type or '정보없음'} | "
+            f"갱신요구권사용여부: {use_rr}"    
         )
 
-        # 문장화
-        # ex 2025년 5월 12일에 서울특별시 강남구 역삼동에 위치한 연립다세대 '역삼타운' 전용면적 85.0㎡가 10층에서 보증금 2억5000만원, 월세 100만원에 전월세 거래가 체결되었다. 건축년도는 2010년이며, 계약기간은 2년이다. 계약구분
-        # record_str = (
-        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 "    
-        #     f"{str(record.get('umdNm',''))}에 위치한 연립다세대 '{str(record.get('mhouseNm', ''))}' "
-        #     f"전용면적 {str(record.get('excluUseAr',''))}㎡가 {str(record.get('floor', ''))}층에서 "
-        #     f"보증금 {str(record.get('deposit','')).replace(',', '')}만원, " # 억단위 처리로 바꾸자 
-        # 억단위 처리로 바꾸자(10,000 -> 1억)
-        # f"{str(int(int(record.get('deposit','').replace(',', '')) / 10000))}억원, "
-        #     f"월세 {str(record.get('monthlyRent','')).replace(',', '')}만원에 전월세 거래가 체결되었다. "
-        #     f"건축년도는 {str(record.get('buildYear', ''))}년이며, 계약기간은 {str(record.get('contractTerm',''))}이다. "
-        #     f"계약구분은 {str(record.get('contractType',''))}이며, "
-        #     f"갱신요구권사용은 {str(record.get('useRRRight',''))}이다. "
-        #     f"종전계약보증금은 {str(record.get('preDeposit',''))}만원, " # 억단위 처리로 바꾸자
-        #     f"종전계약월세는 {str(record.get('preMonthlyRent',''))}만원이다." 
-        # )
+        if preMonthlyRent != '0': # 종전계약월세가 있으면 월세
+            record_str += f" | 종전계약보증금: {preDeposit} / 종전계약월세: {preMonthlyRent}"
+        elif preDeposit != '0': # 종전계약보증금이 있으면 전세
+            record_str += f" | 종전계약전세금: {preDeposit}"
+        else:
+            pass
 
         last_data = {
             "metadata": {
@@ -368,21 +552,10 @@ def load_previous_hashes(filepath: str) -> set:
 
     return hashes
 
-# 스케줄 설정
-import schedule
-import time
-
-schedule.every(1).days.do(save_rh_trade_data_to_txt)
-schedule.every(1).days.do(save_rh_rent_data_to_txt)
 
 # --- 스크립트 실행 (Main Pipeline) ---
 if __name__ == "__main__":
     # print("=== 연립다세대 매매 실거래가 데이터 수집 테스트 ===\n")
-    # save_rh_trade_data_to_txt()
     # print("\n=== 연립다세대 전월세 실거래가 데이터 수집 테스트 ===\n")
-    # save_rh_rent_data_to_txt()
-
-    while True:
-        schedule.run_pending()
-        # 30분 대기
-        time.sleep(1800)
+    save_rh_trade_data_to_txt()
+    save_rh_rent_data_to_txt()

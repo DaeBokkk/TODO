@@ -308,126 +308,147 @@ def get_all_apt_rent_data(ym: str) -> list[dict]:
 # 전월세 데이터 리스트를 문자열 리스트로 변환 함수
 def return_apt_rent_string(data: list[dict]) -> list[dict]:
     """
-    전월세 데이터 리스트를 받아, RAG 및 사람이 읽기 좋은 자연어 문장 리스트로 반환합니다.
+    전월세 데이터 리스트를 받아, RAG 최적화된 파이프(|) 구분 구조의 텍스트로 반환합니다.
     """
     
-    # 금액을 '억/만원' 단위로 변환하는 헬퍼 함수
-    def _format_money(amount_10k):
-        try:
-            amount = int(amount_10k)
-            if amount == 0: return "0원"
-            eok = amount // 10000
-            man = amount % 10000
-            
-            result = []
-            if eok > 0: result.append(f"{eok}억")
-            if man > 0: result.append(f"{man:}천" if man % 1000 == 0 and man != 0 else f"{man:}") 
-            # 간단하게 '4억 5,000' 식으로 표기하거나, 뒤에 '만원'을 붙임
-            if man > 0:
-                return f"{eok}억 {man:}만원" if eok > 0 else f"{man:}만원"
-            else:
-                return f"{eok}억원"
-        except:
-            return "0원"
-
     result_list = []
+
+    if not data:
+        return []
+
+    print(f"\n=== {len(data)}건의 아파트 전월세 데이터를 RAG 포맷으로 변환 시작 ===")
 
     for item in data:
         try:
-            # 날짜 패딩 처리 (1월 -> 01)
-            year = str(item['dealYear'])
-            month = str(item['dealMonth']).zfill(2)
-            day = str(item['dealDay']).zfill(2)
-            # --- 1. 기본 정보 ---
-            deal_date = f"{item.get('dealYear')}년 {item.get('dealMonth')}월 {item.get('dealDay')}일"
-            dong = item.get('umdNm', '')
-            apt_name = item.get('aptNm', '')
-            floor = item.get('floor', '')
-            floor_str = f"{floor}층" if floor else "층수 미상"
-            
-            area = item.get('excluUseAr', '')
-            build_year = item.get('buildYear', '')
+            # --- 헬퍼: 값 안전하게 가져오기 (XML 공백/None 처리) ---
+            def get_val(key, default=''):
+                val = item.get(key)
+                return str(val).strip() if val is not None else default
 
-            # --- 2. 금액 정보 (None 처리 및 정수 변환) ---
-            # API 값(단위: 만원)을 가져옴. 값이 없으면 '0'으로 처리
-            deposit_val = item.get('deposit') or '0' 
-            monthly_val = item.get('monthlyRent') or '0'
-            
-            deposit_int = int(str(deposit_val).replace(',', '').strip())
-            monthly_int = int(str(monthly_val).replace(',', '').strip())
+            # --- 1. 금액 포맷팅 헬퍼 (억/만원 단위) ---
+            def fmt_money(val_str):
+                try:
+                    # 쉼표 제거 및 공백 제거
+                    clean_str = str(val_str).replace(',', '').strip()
+                    if not clean_str: return "0"
+                    
+                    val = int(clean_str)
+                    if val == 0: return "0"
+                    
+                    if val >= 10000:
+                        eok = val // 10000
+                        man = val % 10000
+                        return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
+                    return f"{val:,}만원"
+                except:
+                    return "0원"
 
-            # --- 3. 거래 형태 판단 ---
-            deal_type = ""
-            price_text = ""
+            # --- 2. 기본 정보 추출 ---
+            year = get_val('dealYear')
+            month = get_val('dealMonth').zfill(2)
+            day = get_val('dealDay').zfill(2)
+            deal_date = f"{year}년 {month}월 {day}일"
+
+            dong = get_val('umdNm')
+            jibun = get_val('jibun')
+            apt_name = get_val('aptNm')
+            floor = get_val('floor')
+            floor_str = f"{floor}층" if floor else "층수미상"
+            build_year = get_val('buildYear')
+
+            # --- 3. 전/월세 금액 처리 ---
+            dep_raw = get_val('deposit', '0')
+            mon_raw = get_val('monthlyRent', '0')
             
-            if monthly_int > 0:
-                deal_type = "월세" # 또는 반전세
-                price_text = f"보증금 {_format_money(deposit_int)}에 월세 {_format_money(monthly_int)}"
+            dep_fmt = fmt_money(dep_raw)
+            mon_fmt = fmt_money(mon_raw)
+            
+            # 월세 여부 판단 (월세 금액이 0보다 크면 월세)
+            try:
+                mon_int = int(mon_raw.replace(',', ''))
+            except:
+                mon_int = 0
+
+            if mon_int > 0:
+                deal_type = "월세"
+                price_text = f"보증금: {dep_fmt} / 월세: {mon_fmt}"
             else:
                 deal_type = "전세"
-                price_text = f"전세금 {_format_money(deposit_int)}"
+                price_text = f"전세금: {dep_fmt}"
 
-            # --- 4. 계약 정보 (신규/갱신/기간) ---
-            contract_type = item.get('contractType') # 신규, 갱신, 또는 None
-            contract_type_str = "" 
-            
-            if contract_type:
-                contract_type = contract_type.strip()
-                contract_type_str = f" '{contract_type}'로" # 예: '신규'로, '갱신'으로
+            # --- 4. 면적 (평수 환산 포함) ---
+            area_raw = get_val('excluUseAr', '0')
+            try:
+                area_float = float(area_raw)
+                area_text = f"{area_float}㎡ (약 {area_float / 3.3058:.1f}평)"
+            except:
+                area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
+
+            # --- 5. 계약 및 갱신 정보 ---
+            contract_type = get_val('contractType') # 신규/갱신/공백 계약구분 
+            term_raw = get_val('contractTerm')
+
+            if term_raw and '~' in term_raw:
+                try:
+                    start, end = term_raw.split('~')
+                    sy, sm = start.split('.')
+                    ey, em = end.split('.')
+                    term = f"20{sy}년 {sm.zfill(2)}월 ~ 20{ey}년 {em.zfill(2)}월"
+                except:
+                    term = term_raw
             else:
-                contract_type_str = "" # 정보가 없으면 생략
-
-            # 계약 기간 처리 (24.02~26.02 형태)
-            term_raw = str(item.get('contractTerm') or '')
-            term_str = ""
-            if '~' in term_raw:
-                # 24.02 -> 2024년 2월 형태로 변환 로직 필요하면 추가, 여기선 그대로 사용하거나 간단 변환
-                term_str = f" 계약 기간은 {term_raw}입니다."
+                term = '정보없음'
             
-            # --- 5. 갱신인 경우 종전 계약 정보 (Optional) ---
+            use_rr = get_val('useRRRight') # 사용/공백 갱신요구권
+            
+            # 갱신일 경우 종전 계약 정보 구성
             prev_contract_str = ""
             if contract_type == "갱신":
-                # 종전 보증금/월세 확인
-                pre_deposit = item.get('preDeposit') or '0'
-                pre_monthly = item.get('preMonthlyRent') or '0'
+                pre_dep_fmt = fmt_money(get_val('preDeposit', '0')) # 종전 보증금 or 전세금
+                pre_mon_fmt = fmt_money(get_val('preMonthlyRent', '0')) # 종전 월세 or 0
                 
-                pre_dep_int = int(str(pre_deposit).replace(',', ''))
-                pre_mon_int = int(str(pre_monthly).replace(',', ''))
-                
-                if pre_dep_int > 0 or pre_mon_int > 0:
-                    prev_text = ""
-                    if pre_mon_int > 0:
-                        prev_text = f"보증금 {_format_money(pre_dep_int)}/월세 {_format_money(pre_mon_int)}"
-                    else:
-                        prev_text = f"전세금 {_format_money(pre_dep_int)}"
-                    
-                    # 증감 확인 (단순 비교)
-                    diff = deposit_int - pre_dep_int
-                    diff_str = ""
-                    if diff > 0: diff_str = f"({_format_money(diff)} 인상)"
-                    elif diff < 0: diff_str = f"({_format_money(abs(diff))} 인하)"
-                    
-                    prev_contract_str = f" (종전 계약: {prev_text}{diff_str})"
+                # 종전 월세가 있는지 확인
+                try:
+                    pre_mon_int = int(get_val('preMonthlyRent', '0').replace(',', ''))
+                except:
+                    pre_mon_int = 0
 
-            # 갱신요구권 사용 여부
-            rr_right = item.get('useRRRight')
-            rr_str = " (계약갱신요구권 사용)" if rr_right == '사용' else ""
+                if pre_mon_int > 0: # 종전 월세가 있으면 월세
+                    prev_contract_str = f"보증금: {pre_dep_fmt} / 월세: {pre_mon_fmt}"
+                elif pre_dep_fmt != '0': # 종전 월세가 없으면 전세
+                    prev_contract_str = f"전세금: {pre_dep_fmt}"
 
-            # --- 6. 최종 문장 조합 ---
-            # 문맥: [날짜], [위치] [아파트] [층]이 [가격]으로 [전/월세] [신규/갱신] 계약되었습니다. [기간]. [종전정보]. [건물정보].
+            # --- 6. 최종 문장 조합 (파이프 구조) ---
+            # 값이 없는 경우 '정보없음' 또는 '해당없음' 처리하여 구조 유지
             
             text_chunk = (
-                f"{deal_date}, 법정동 '{dong}'에 위치한 '{apt_name}' 아파트 {floor_str} 매물이 "
-                f"{price_text}으로 {deal_type}{contract_type_str} 계약되었습니다."
-                f"{term_str}{prev_contract_str}{rr_str} "
-                f"이 단지는 {build_year}년에 준공되었으며, 해당 세대의 전용면적은 {area}㎡입니다."
+                f"[아파트 전월세] | "
+                f"거래일자: {deal_date} | "
+                f"법정동: {dong} | "
+                f"도로명주소: {dong} {jibun} | "
+                f"아파트명: {apt_name} | "
+                f"층수: {floor_str} | "
+                f"거래유형: {deal_type} | "
+                f"거래금액: {price_text} | "
+                f"전용면적: {area_text} | "
+                f"건축년도: {build_year}년 | "
+                f"갱신요구권: {'사용' if use_rr == '사용' else '미사용'}"
             )
-            # 공백 정리 (더블 스페이스 제거)
-            text_chunk = text_chunk.replace("  ", " ")
-            
+
+            if contract_type:
+                text_chunk += f" | 계약구분: {contract_type}"
+                text_chunk += f" | 계약기간: {term}"
+            else:
+                pass
+
+            if prev_contract_str:
+                text_chunk += f" | 종전계약: {prev_contract_str}"
+
+
+            # --- 7. 결과 저장 ---
             last_data = {
                 "metadata": {
-                    "region_code": item.get('sggCd',''),
+                    "region_code": get_val('sggCd'),
                     "enactment_date": f"{year}{month}{day}"
                 },
                 "content": text_chunk
@@ -435,10 +456,8 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
 
             result_list.append(last_data)
 
-
         except Exception as e:
-            print(f"    -> [경고] 변환 중 오류 발생: {e} | 데이터: {item.get('aptNm', 'Unknown')}")
+            print(f"    -> [경고] 변환 중 오류 발생: {e} | 아파트명: {item.get('aptNm', 'Unknown')}")
             continue
 
     return result_list
-

@@ -1,6 +1,6 @@
 from dataPortal import land, apt, sm, rh, officetel
 from crawling_laws import law_go
-from crawling_news import bitKinds
+from crawling_news import bigKinds
 import schedule
 import time
 
@@ -21,12 +21,13 @@ def trade_auto_collect():
     rh.save_rh_rent_data_to_txt()
 
 def crawl_law_texts():
-    bitKinds.main()
+    bigKinds.main()
 
 schedule.every().day.at("02:00").do(trade_auto_collect) # 02:00 AM에 부동산 실거래가 수집 실행
 schedule.every().day.at("23:58").do(crawl_law_texts)
 
 if __name__ == "__main__":
+    trade_auto_collect()  # 스크립트 실행 시 즉시 한 번 실행
     while True:
         print("스케줄러 대기 중...")
         schedule.run_pending()

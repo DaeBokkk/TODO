@@ -65,7 +65,7 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
 
     all_land_data = []
 
-    print(f"=== {ym} 전국 아파트 전원세 데이터 수집 시작 ===")
+    print(f"=== {ym} 경기도 토지 매매 데이터 수집 시작 ===")
 
     region_dict = region.get_all_sgg_code_dict()
     total_regions = len(region_dict)
@@ -79,63 +79,166 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
         if rent_data:
             all_land_data.extend(rent_data)
         else:
-            print(f"    -> {region_name} 지역은 법정동코드({lawd_cd}), {ym}월 전원세 거래 내역이 없습니다.")
+            print(f"    -> {region_name} 지역은 법정동코드({lawd_cd}), {ym}월 매매 거래 내역이 없습니다.")
 
-    print(f"\n=== 모든 지역 데이터 병합 완료. {ym} 전국 총 전원세 데이터: {len(all_land_data)}건 ===")
+    print(f"\n=== 모든 지역 데이터 병합 완료. {ym} 경기도 총 토지 매매 데이터: {len(all_land_data)}건 ===")
     
     return all_land_data
 
-# 토지 거래 데이터 리스트를 문자열 리스트로 변환 함수
+# # 토지 거래 데이터 리스트를 문자열 리스트로 변환 함수
+# def return_land_trade_string(data: list[dict]) -> list[dict]:
+#     result_strings: list[str] = []
+#     for record in data:
+#         record_str = (
+#             f"지역코드: {str(record.get('sggCd',''))}\n"
+#             f"시군구: {str(record.get('sggNm',''))}\n"
+#             f"법정동명: {str(record.get('umdNm',''))}\n"
+#             f"지번: {str(record.get('jibun',''))}\n"
+#             f"지목: {str(record.get('jimok',''))}\n"
+#             f"용도지역: {str(record.get('landUse',''))}\n"
+#             f"계약년도: {str(record.get('dealYear',''))}\n"
+#             f"계약월: {str(record.get('dealMonth',''))}\n"
+#             f"계약일: {str(record.get('dealDay',''))}\n"
+#             f"거래면적(㎡): {str(record.get('dealArea',''))}\n"
+#             f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
+#             f"지분거래구분: {str(record.get('shareDealingType',''))}\n"
+#             f"해제여부: {str(record.get('cdealType',''))}\n"
+#             f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
+#             f"거래유형: {str(record.get('dealingGbn',''))}\n"
+#             f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
+#         )
+
+#         # 문장화 
+#         # ex 2025년 12월 3일, '중개사 소재지: 경기 광주시 법정동 초월읍 쌍동리' (지번: 395)에 위치한 '초월역모아미래도파크힐스' 아파트 103동동 8층 매물이 거래금액 4억 6000만원에 중개거래되었습니다. 이 단지는 2020년에 준공되었으며, 전용면적은 84.9191㎡입니다.
+#         record_str = (
+#             f"{str(record.get('dealYear',''))}년 "
+#             f"{str(record.get('dealMonth',''))}월 "
+#             f"{str(record.get('dealDay',''))}일 "
+#             f"{str(record.get('sggNm',''))} "
+#             f"{str(record.get('umdNm',''))} "
+#             f"{str(record.get('jibun',''))}번지 "
+#             f"토지(지목: {str(record.get('jimok',''))}, "
+#             f"용도지역: {str(record.get('landUse',''))}) "
+#             f"거래면적 {str(record.get('dealArea',''))}㎡, "
+#             f"거래금액 {str(record.get('dealAmount','')).replace(',', '')}만원, "
+#             f"지분거래구분: {str(record.get('shareDealingType',''))}, "
+#             f"해제여부: {str(record.get('cdealType',''))}, "
+#             f"거래유형: {str(record.get('dealingGbn',''))}, "
+#             f"중개사소재지: {str(record.get('estateAgentSggNm',''))}"
+#         )
+
+#         last_data = {
+#             "metadata": {
+#                 "region_code": record.get('sggCd',''),
+#                 "enactment_date": f"{str(record.get('dealYear',''))}{str(record.get('dealMonth','')).zfill(2)}{str(record.get('dealDay','')).zfill(2)}"
+#             },
+#             "content": record_str
+#         }
+
+#         result_strings.append(last_data)
+
+#     return result_strings
+
+# 토지 거래 데이터 리스트를 문자열 리스트로 변환 함수 (RAG 최적화 적용)
 def return_land_trade_string(data: list[dict]) -> list[dict]:
-    result_strings: list[str] = []
+    result_strings: list[dict] = []
+    
+    # 데이터가 없으면 빈 리스트 반환
+    if not data:
+        return []
+
+    print(f"\n=== {len(data)}건의 토지 데이터를 RAG 포맷으로 변환 시작 ===")
+
     for record in data:
-        record_str = (
-            f"지역코드: {str(record.get('sggCd',''))}\n"
-            f"시군구: {str(record.get('sggNm',''))}\n"
-            f"법정동명: {str(record.get('umdNm',''))}\n"
-            f"지번: {str(record.get('jibun',''))}\n"
-            f"지목: {str(record.get('jimok',''))}\n"
-            f"용도지역: {str(record.get('landUse',''))}\n"
-            f"계약년도: {str(record.get('dealYear',''))}\n"
-            f"계약월: {str(record.get('dealMonth',''))}\n"
-            f"계약일: {str(record.get('dealDay',''))}\n"
-            f"거래면적(㎡): {str(record.get('dealArea',''))}\n"
-            f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
-            f"지분거래구분: {str(record.get('shareDealingType',''))}\n"
-            f"해제여부: {str(record.get('cdealType',''))}\n"
-            f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
-            f"거래유형: {str(record.get('dealingGbn',''))}\n"
-            f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
-        )
+        try:
+            # --- 헬퍼: 값 안전하게 가져오기 ---
+            def get_val(key, default=''):
+                val = record.get(key)
+                return str(val).strip() if val is not None else default
 
-        # 문장화 
-        # ex 2023년 5월 15일 경기도 성남시 분당구 정자동 123-45번지 토지(지목: 대지, 용도지역: 제1종일반주거지역) 거래면적 250.5㎡, 거래금액 15000만원, 지분거래구분: 전부, 해제여부: 정상, 거래유형: 매매, 중개사소재지: 성남시 분당구
-        record_str = (
-            f"{str(record.get('dealYear',''))}년 "
-            f"{str(record.get('dealMonth',''))}월 "
-            f"{str(record.get('dealDay',''))}일 "
-            f"{str(record.get('sggNm',''))} "
-            f"{str(record.get('umdNm',''))} "
-            f"{str(record.get('jibun',''))}번지 "
-            f"토지(지목: {str(record.get('jimok',''))}, "
-            f"용도지역: {str(record.get('landUse',''))}) "
-            f"거래면적 {str(record.get('dealArea',''))}㎡, "
-            f"거래금액 {str(record.get('dealAmount','')).replace(',', '')}만원, "
-            f"지분거래구분: {str(record.get('shareDealingType',''))}, "
-            f"해제여부: {str(record.get('cdealType',''))}, "
-            f"거래유형: {str(record.get('dealingGbn',''))}, "
-            f"중개사소재지: {str(record.get('estateAgentSggNm',''))}"
-        )
+            # --- 1. 수치 데이터 전처리 (금액 & 평수) ---
+            # 금액 포맷팅 (만원 단위 입력 -> 억/만원 변환)
+            raw_amount = get_val('dealAmount', '0').replace(',', '')
+            try:
+                amt_int = int(raw_amount)
+                if amt_int == 0:
+                    price_str = "0원"
+                elif amt_int >= 10000:
+                    eok = amt_int // 10000
+                    man = amt_int % 10000
+                    price_str = f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
+                else:
+                    price_str = f"{amt_int:,}만원"
+            except:
+                price_str = "가격정보없음"
 
-        last_data = {
-            "metadata": {
-                "region_code": record.get('sggCd',''),
-                "enactment_date": f"{str(record.get('dealYear',''))}{str(record.get('dealMonth','')).zfill(2)}{str(record.get('dealDay','')).zfill(2)}"
-            },
-            "content": record_str
-        }
+            # 면적 포맷팅 (m2 -> 평 환산)
+            raw_area = get_val('dealArea', '0')
+            try:
+                area_float = float(raw_area)
+                pyeong = round(area_float / 3.3058, 1)
+            except:
+                area_float = 0.0
+                pyeong = 0.0
 
-        result_strings.append(last_data)
+            # --- 2. 날짜 및 주소 ---
+            year = get_val('dealYear')
+            month = get_val('dealMonth').zfill(2)
+            day = get_val('dealDay').zfill(2)
+            deal_date = f"{year}년 {month}월 {day}일"
+
+            # 주소 조합
+            sgg = get_val('sggNm')
+            umd = get_val('umdNm')
+            jibun = get_val('jibun')
+            full_address = f"{sgg} {umd} {jibun}번지"
+
+            # --- 3. 문장 구성 (RAG 최적화: 키워드 위주) ---
+            # 불필요한 서술어 제거, 핵심 정보 구조화
+            main_content = (
+                f"[토지 매매] | 거래일자: {deal_date} | "
+                f"위치: {full_address} | "
+                f"지목: '{get_val('jimok')}' | 용도: '{get_val('landUse')}' | "
+                f"면적: {area_float}㎡ (약 {pyeong}평) | 금액: {price_str} | 유형: '{get_val('dealingGbn')}'"
+            )
+
+            # --- 4. 부가 정보 (조건부 추가) ---
+            extras = []
+
+            # 지분 거래 여부
+            share_type = get_val('shareDealingType')
+            if share_type and share_type != "None":
+                extras.append(f"지분: {share_type}")
+
+            # 계약 해제 여부
+            cdeal_type = get_val('cdealType')
+            if cdeal_type and cdeal_type != "None":
+                extras.append(f"상태: 계약해제 (일자 {get_val('cdealDay')})")
+
+            # 중개사 소재지 (직거래가 아니고 데이터가 있을 때만)
+            agent_loc = get_val('estateAgentSggNm')
+            if agent_loc and agent_loc != "None":
+                extras.append(f"중개: {agent_loc}")
+
+            # 부가 정보가 있으면 이어 붙이기
+            if extras:
+                main_content += " | " + " | ".join(extras)
+
+            # --- 5. 결과 저장 ---
+            last_data = {
+                "metadata": {
+                    "region_code": get_val('sggCd'),
+                    "enactment_date": f"{year}{month}{day}"
+                },
+                "content": main_content
+            }
+
+            result_strings.append(last_data)
+
+        except Exception as e:
+            # 에러 발생 시 로그 출력하고 건너뜀 (전체 프로세스 중단 방지)
+            print(f"변환 중 에러 발생: {e} | 지역: {record.get('sggNm')} {record.get('umdNm')}")
+            continue
 
     return result_strings
 
@@ -216,13 +319,8 @@ def save_land_trade_data_to_txt() -> None:
 
     print(f"텍스트 파일로 저장 완료: {filename}")
 
-# 스크립트 실행 (Main Pipeline)
-schedule.every(1).days.do(save_land_trade_data_to_txt)
 
 if __name__ == "__main__":
     # 토지 매매 실거래가 데이터 txt 파일로 저장 
     # 스케줄 실행
     save_land_trade_data_to_txt()
-    while True:
-        schedule.run_pending()
-        time.sleep(1)

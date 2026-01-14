@@ -6,7 +6,6 @@ import datetime #  main에서 날짜 설정을 위해 임포트
 import pandas as pd
 import schedule
 import time
-import scheduler
 import json
 import os
 
@@ -114,11 +113,6 @@ def load_previous_hashes(filepath: str) -> set:
 
     return hashes
 
-# 스케줄링
-# --- 스케줄러 설정 ---
-# 매일 1회 실행 (예: 매일 자정에 실행)
-schedule.every(1).days.do(save_apt_rent_data_to_txt)
-schedule.every(1).days.do(save_apt_data_to_txt)
 
 # --- 스크립트 실행 (Main Pipeline) ---
 if __name__ == "__main__":  
@@ -136,6 +130,3 @@ if __name__ == "__main__":
     # 방법 2 : Document 텍스트 파일로 저장 스케줄링
     save_apt_data_to_txt()
     save_apt_rent_data_to_txt()
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
