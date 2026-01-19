@@ -192,37 +192,37 @@ def return_land_trade_string(data: list[dict]) -> list[dict]:
             umd = get_val('umdNm')
             jibun = get_val('jibun')
             full_address = f"{sgg} {umd} {jibun}번지"
+            dealing_type = get_val('dealingGbn')
+
+            # 중개사소재지
+            estate_agent_sgg = get_val('estateAgentSggNm')
+
+            cdeal_type = get_val('cdealType')
 
             # --- 3. 문장 구성 (RAG 최적화: 키워드 위주) ---
             # 불필요한 서술어 제거, 핵심 정보 구조화
+            # 자연어 문장으로 처리 (ex) 거래일자: 2025년 12월 3일, 위치: 경기 광주시 법정동 초월읍 쌍동리 (지번: 395)에 위치한 '초월역모아미래도파크힐스' 아파트 103동동 8층 매물이 거래금액 4억 6000만원에 중개거래되었습니다.
             main_content = (
-                f"[토지 매매] | 거래일자: {deal_date} | "
-                f"위치: {full_address} | "
-                f"지목: '{get_val('jimok')}' | 용도: '{get_val('landUse')}' | "
-                f"면적: {area_float}㎡ (약 {pyeong}평) | 금액: {price_str} | 유형: '{get_val('dealingGbn')}'"
+                f"토지 매매 거래입니다. 거래일자는 {deal_date}입니다. "
+                # f"위치: {full_address} | "
+                # f"지목: '{get_val('jimok')}' | 용도: '{get_val('landUse')}' | "
+                # f"면적: {area_float}㎡ (약 {pyeong}평) | 금액: {price_str} | 유형: '{get_val('dealingGbn')}'"
+                f"{full_address}에 위치한 지목 '{get_val('jimok')}', 용도지역 '{get_val('landUse')}' 토지 매물이 {price_str}에 {dealing_type}되었습니다."
+                f" 면적은 {area_float}㎡ (약 {pyeong}평)입니다."
             )
 
-            # --- 4. 부가 정보 (조건부 추가) ---
-            extras = []
+            if dealing_type == "중개거래":
+                main_content += " 중개사소재지는 " + estate_agent_sgg + "입니다."    
+            # --- 4. 추가 정보 (해제여부 등) ---
+            if cdeal_type == "O":
+                cdeal_day = get_val('cdealDay')# 해제사유발생일 25.01.15 -> 2025년 01월 15일 포맷 변환
 
-            # 지분 거래 여부
-            share_type = get_val('shareDealingType')
-            if share_type and share_type != "None":
-                extras.append(f"지분: {share_type}")
+                if cdeal_day:
+                    cdeal_day_formatted = f"20{cdeal_day[:2]}년 {cdeal_day[3:5]}월 {cdeal_day[6:8]}일"
+                    main_content += f" 이 거래는 {cdeal_day_formatted}에 해제되었습니다."
+                else:
+                    main_content += " 이 거래는 해제되었습니다."
 
-            # 계약 해제 여부
-            cdeal_type = get_val('cdealType')
-            if cdeal_type and cdeal_type != "None":
-                extras.append(f"상태: 계약해제 (일자 {get_val('cdealDay')})")
-
-            # 중개사 소재지 (직거래가 아니고 데이터가 있을 때만)
-            agent_loc = get_val('estateAgentSggNm')
-            if agent_loc and agent_loc != "None":
-                extras.append(f"중개: {agent_loc}")
-
-            # 부가 정보가 있으면 이어 붙이기
-            if extras:
-                main_content += " | " + " | ".join(extras)
 
             # --- 5. 결과 저장 ---
             last_data = {

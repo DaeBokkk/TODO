@@ -167,9 +167,11 @@ def return_apt_string(df: pd.DataFrame) -> list[dict]:
             jibun = row['jibun']
             floor = row['floor']
             floor_str = f"{floor}층" if pd.notna(floor) else "층수 미상"
+            umd_nm = row['umdNm']
             
             # 전용면적 및 건축년도
             area = row['excluUseAr']
+            area = f"{area}㎡ (약 {float(area) / 3.3058:.1f}평)" if pd.notna(area) else "면적 미상"
             build_year = row['buildYear']
 
             # 동 정보 (선택)
@@ -185,9 +187,9 @@ def return_apt_string(df: pd.DataFrame) -> list[dict]:
             # 거래 유형 (직거래/중개거래)
             estate_agent_info = ""
             if pd.isna(row.get('estateAgentSggNm')) or str(row.get('estateAgentSggNm')).strip() == '':
-                 estate_agent_info = f"{row['umdNm']} 직거래"
+                 estate_agent_info = f""
             else:
-                 estate_agent_info = f"중개사 소재지: {row['estateAgentSggNm']} 법정동 {row['umdNm']}"
+                 estate_agent_info = f"중개사 소재지는 {row['estateAgentSggNm']}입니다. "
 
             # 해제 여부 확인
             deal_status = f"거래금액 {deal_amount_str}에 {row['dealingGbn']}되었습니다."
@@ -198,15 +200,19 @@ def return_apt_string(df: pd.DataFrame) -> list[dict]:
             # 토지임대부 여부
             land_lease_info = ""
             if pd.notna(row.get('landLeaseholdGbn')) and str(row['landLeaseholdGbn']) == 'Y':
-                 land_lease_info = " (토지임대부)"
+                #  land_lease_info = " (토지임대부)"
+                land_lease_info = "이 매물은 토지임대부 아파트입니다."
 
             # --- 3. 최종 문장 조합 (Content) ---
             # 문맥: [날짜], [중개정보] [아파트] [동] [층]이 [상태]. [건물정보].
             text_chunk = (
-                f"{deal_date_str}, '{estate_agent_info}' (지번: {jibun})에 위치한 "
+                f"아파트 매매 거래입니다. 거래일자는 {deal_date_str}입니다. "
+                f"{umd_nm} (지번: {jibun})에 위치한 "
                 f"'{apt_name}' 아파트{apt_dong_info} {floor_str} 매물이 "
                 f"{deal_status} "
-                f"이 단지는 {build_year}년에 준공되었으며, 전용면적은 {area}㎡입니다.{land_lease_info}"
+                f"이 단지는 {build_year}년에 준공되었으며, 전용면적은 {area}입니다. "
+                f"{estate_agent_info}"
+                f"{land_lease_info}"
             )
             
             # 공백 정리 (더블 스페이스 제거)
@@ -308,7 +314,7 @@ def get_all_apt_rent_data(ym: str) -> list[dict]:
 # 전월세 데이터 리스트를 문자열 리스트로 변환 함수
 def return_apt_rent_string(data: list[dict]) -> list[dict]:
     """
-    전월세 데이터 리스트를 받아, RAG 최적화된 파이프(|) 구분 구조의 텍스트로 반환합니다.
+    전월세 데이터 리스트를 받아, RAG 최적화된 구조의 텍스트로 반환합니다.
     """
     
     result_list = []
@@ -371,10 +377,10 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
 
             if mon_int > 0:
                 deal_type = "월세"
-                price_text = f"보증금: {dep_fmt} / 월세: {mon_fmt}"
+                price_text = f"보증금 {dep_fmt}, 월세는 {mon_fmt}"
             else:
                 deal_type = "전세"
-                price_text = f"전세금: {dep_fmt}"
+                price_text = f"전세금 {dep_fmt}"
 
             # --- 4. 면적 (평수 환산 포함) ---
             area_raw = get_val('excluUseAr', '0')
@@ -393,7 +399,7 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
                     start, end = term_raw.split('~')
                     sy, sm = start.split('.')
                     ey, em = end.split('.')
-                    term = f"20{sy}년 {sm.zfill(2)}월 ~ 20{ey}년 {em.zfill(2)}월"
+                    term = f"20{sy}년 {sm.zfill(2)}월부터 20{ey}년 {em.zfill(2)}월까지"
                 except:
                     term = term_raw
             else:
@@ -414,36 +420,45 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
                     pre_mon_int = 0
 
                 if pre_mon_int > 0: # 종전 월세가 있으면 월세
-                    prev_contract_str = f"보증금: {pre_dep_fmt} / 월세: {pre_mon_fmt}"
+                    prev_contract_str = f"종전계약보증금은 {pre_dep_fmt}, 종전계약월세는 {pre_mon_fmt}입니다."
                 elif pre_dep_fmt != '0': # 종전 월세가 없으면 전세
-                    prev_contract_str = f"전세금: {pre_dep_fmt}"
+                    prev_contract_str = f"종전계약전세금은 {pre_dep_fmt}입니다."
+                else:
+                    prev_contract_str = "종전계약정보가 없습니다."
 
             # --- 6. 최종 문장 조합 (파이프 구조) ---
             # 값이 없는 경우 '정보없음' 또는 '해당없음' 처리하여 구조 유지
-            
+            # 자연어 문장으로 변환 ex) [아파트 전세] 2025년 10월 30일, 정자동에 위치한 화서역파크푸르지오 10층 매물이 전세금 5억 400만원에 갱신 계약되었습니다. 전용면적은 84.7㎡(약 25.6평)이며, 2021년에 준공된 단지입니다. 종전 전세금 4억 8,000만원에서 갱신되었습니다. 계약 기간은 2025년 12월부터 2027년 12월까지입니다. 갱신요구권을 사용했습니다.
             text_chunk = (
-                f"[아파트 전월세] | "
-                f"거래일자: {deal_date} | "
-                f"법정동: {dong} | "
-                f"도로명주소: {dong} {jibun} | "
-                f"아파트명: {apt_name} | "
-                f"층수: {floor_str} | "
-                f"거래유형: {deal_type} | "
-                f"거래금액: {price_text} | "
-                f"전용면적: {area_text} | "
-                f"건축년도: {build_year}년 | "
-                f"갱신요구권: {'사용' if use_rr == '사용' else '미사용'}"
+                f"아파트 {deal_type} 거래입니다. 거래일자는 {deal_date}입니다. "
+                f"{dong} (지번: {jibun})에 위치한 "
+                f"'{apt_name}' 아파트 {floor_str} 매물이 "
+                f" {price_text}으로 "
+                f"{'계약되었습니다.' if contract_type != '갱신' else '갱신 계약되었습니다.'} "
+                f" 전용면적은 {area_text}이며, {build_year}년에 준공된 단지입니다."
+                # f"거래일자: {deal_date} | "
+                # f"법정동: {dong} | "
+                # f"도로명주소: {dong} {jibun} | "
+                # f"아파트명: {apt_name} | "
+                # f"층수: {floor_str} | "
+                # f"거래유형: {deal_type} | "
+                # f"거래금액: {price_text} | "
+                # f"전용면적: {area_text} | "
+                # f"건축년도: {build_year}년 | "
+                # f"갱신요구권: {'사용' if use_rr == '사용' else '미사용'}"
+
+
             )
 
             if contract_type:
-                text_chunk += f" | 계약구분: {contract_type}"
-                text_chunk += f" | 계약기간: {term}"
+                text_chunk += f" 계약 기간은 {term}입니다."
             else:
                 pass
 
             if prev_contract_str:
-                text_chunk += f" | 종전계약: {prev_contract_str}"
-
+                text_chunk += f" {prev_contract_str}."
+            # 공백 정리 (더블 스페이스 제거)
+            text_chunk = " ".join(text_chunk.split())
 
             # --- 7. 결과 저장 ---
             last_data = {

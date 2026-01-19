@@ -135,17 +135,22 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
         jibun = get_val('jibun')
         mhouse_name = get_val('mhouseNm')
         floor = get_val('floor')
-        floor_str = f"{floor}층" if floor else "층수미상"
+        
+        if floor and floor.startswith('-'):
+            floor_str = f"지하 {abs(int(floor))}층"
+        else:
+            floor_str = f"{floor}층" if floor else "층수미상"
+
         deal_amount = fmt_money(get_val('dealAmount'))
         build_year = get_val('buildYear')
         cdeal_type = get_val('cdealType') # 해제여부 ex O or None
         cdeal_date = get_val('cdealDay') # 해제사유발생일 ex 25.05.12 or '' to -> 2025년 05월 12일
-        dealing_gbn = get_val('dealingGbn')
+        dealing_gbn = get_val('dealingGbn', "거래") # 거래유형 직거래 or 중개거래
         estate_agent_sgg_nm = get_val('estateAgentSggNm')
         rgst_date = get_val('rgstDate')
         sler_gbn = get_val('slerGbn')
         buyer_gbn = get_val('buyerGbn')
-        house_type = get_val('houseType')
+        house_type = get_val('houseType') # 주택유형 ex 연립 / 다세대
         area_raw = get_val('excluUseAr') # 전용면적
         land_area_raw = get_val('landAr') # 대지권면적
         
@@ -169,41 +174,61 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
             land_area_text = f"{land_area_raw}㎡ (정보없음)"
 
         record_str = (
-            f"[연립다세대 매매] | "
-            f"거래일자: {deal_date} | "
-            f"법정동명: {dong} | "
-            f"도로명주소 : {dong} {jibun} | "
-            f"연립다세대명: {mhouse_name} | "
-            f"전용면적: {area_text} | "
-            f"대지권면적: {land_area_text} | "
-            f"층수: {floor_str} | "
-            f"거래금액: {deal_amount} | "
-            f"전용면적: {area_raw} | "
-            f"건축년도: {build_year}년 | "
-            f"거래유형: {dealing_gbn} | "
-            f"매도자구분: {sler_gbn} | "
-            f"매수자구분: {buyer_gbn} | "
-            f"주택유형: {house_type}"
-        )
+            f"{house_type}주택 매매거래입니다. "
+            f"거래일자는 {deal_date}입니다. "
+            f"{dong} (지번: {jibun})에 위치한 "
+            f"'{mhouse_name}' {house_type}주택 {floor_str} 매물이 "
+            f"{deal_amount}에 {dealing_gbn}되었습니다. "
+            f"전용면적은 {area_text}이고, 대지권면적은 {land_area_text}입니다. "
+            f"건축년도는 {build_year}년입니다. "
+            f"매도자구분은 {sler_gbn}이며, 매수자구분은 {buyer_gbn}입니다."
+            )
 
-        extras = []
-        if rgst_date: # ex 25.01.12
-            rgst_year, rgst_month, rgst_day = rgst_date.split('.')
-            rgst_date = f"20{(rgst_year)}년 {(rgst_month)}월 {(rgst_day)}일"
-            extras.append(f"등기일자: {rgst_date}")
-            
+            # f"법정동명: {dong} | "
+            # f"도로명주소 : {dong} {jibun} | "
+            # f"연립다세대명: {mhouse_name} | "
+            # f"전용면적: {area_text} | "
+            # f"대지권면적: {land_area_text} | "
+            # f"층수: {floor_str} | "
+            # f"거래금액: {deal_amount} | "
+            # f"전용면적: {area_raw} | "
+            # f"건축년도: {build_year}년 | "
+            # f"거래유형: {dealing_gbn} | "
+            # f"매도자구분: {sler_gbn} | "
+            # f"매수자구분: {buyer_gbn} | "
+            # f"주택유형: {house_type}"
+
         if dealing_gbn == '중개거래':
-            extras.append(f"중개사소재지: {estate_agent_sgg_nm}")
+            record_str += f" 중개사소재지는 {estate_agent_sgg_nm}입니다."
 
         if cdeal_type == 'O':
-            extras.append("거래해제여부: 해제")
-            extras.append(f"해제사유발생일: {cdeal_date}")
+            record_str += f" 해당 거래는 해제되었으며, 해제사유발생일은 {cdeal_date}입니다."
 
-        extras.append(f"매도자구분: {get_val('slerGbn', '정보없음')}")
-        extras.append(f"매수자구분: {get_val('buyerGbn', '정보없음')}")
+        if rgst_date:
+            try:
+                rgst_year, rgst_month, rgst_day = rgst_date.split('.')
+                rgst_date_fmt = f"20{int(rgst_year)}년 {int(rgst_month)}월 {int(rgst_day)}일"
+                record_str += f" 등기일자는 {rgst_date_fmt}입니다."
+            except:
+                record_str += f" 등기일자: {rgst_date}입니다."
+        # extras = []
+        # if rgst_date: # ex 25.01.12
+        #     rgst_year, rgst_month, rgst_day = rgst_date.split('.')
+        #     rgst_date = f"20{(rgst_year)}년 {(rgst_month)}월 {(rgst_day)}일"
+        #     extras.append(f"등기일자: {rgst_date}")
+            
+        # if dealing_gbn == '중개거래':
+        #     extras.append(f"중개사소재지: {estate_agent_sgg_nm}")
 
-        if extras:
-            record_str += " | " + " | ".join(extras)
+        # if cdeal_type == 'O':
+        #     extras.append("거래해제여부: 해제")
+        #     extras.append(f"해제사유발생일: {cdeal_date}")
+
+        # extras.append(f"매도자구분: {get_val('slerGbn', '정보없음')}")
+        # extras.append(f"매수자구분: {get_val('buyerGbn', '정보없음')}")
+
+        # if extras:
+        #     record_str += " | " + " | ".join(extras)
 
         last_data = {
             "metadata": {
@@ -384,8 +409,14 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
         dong = get_val('umdNm')
         jibun = get_val('jibun')
         mhouse_name = get_val('mhouseNm')
+        house_type = get_val('houseType') # 주택유형 ex 연립 / 다세대
         floor = get_val('floor')
-        floor_str = f"{floor}층" if floor else "층수미상"
+
+        if floor and floor.startswith('-'):
+            floor_str = f"지하 {abs(int(floor))}층"
+        else:
+            floor_str = f"{floor}층" if floor else "층수미상"
+
         build_year = get_val('buildYear')
         contract_type = get_val('contractType')
         contract_term = get_val('contractTerm')
@@ -399,7 +430,7 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
             area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
 
         # --- 5. 계약 및 갱신 정보 ---
-        contract_type = get_val('contractType') # 신규/갱신/공백 계약구분 
+        contract_type = get_val('contractType', "신규") # 신규/갱신/공백 계약구분 
         term_raw = get_val('contractTerm')
 
         if term_raw and '~' in term_raw:
@@ -407,7 +438,7 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
                 start, end = term_raw.split('~')
                 sy, sm = start.split('.')
                 ey, em = end.split('.')
-                term = f"20{sy}년 {sm.zfill(2)}월 ~ 20{ey}년 {em.zfill(2)}월"
+                term = f"20{sy}년 {sm.zfill(2)}월부터 20{ey}년 {em.zfill(2)}월까지"
             except:
                 term = "정보없음"
         else:
@@ -435,34 +466,42 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
 
         if mon_int > 0:
             deal_type = "월세"
-            price_text = f"보증금: {dep_fmt} / 월세: {mon_fmt}"
+            price_text = f"보증금 {dep_fmt}, 월세 {mon_fmt}"
         else:
             deal_type = "전세"
-            price_text = f"전세금: {dep_fmt}"
+            price_text = f"전세금 {dep_fmt}"
 
         preDeposit = fmt_money(get_val('preDeposit','')) # 종전계약보증금 (전세 or 보증금 or 0)
         preMonthlyRent = fmt_money(get_val('preMonthlyRent','')) # 종전계약월세 (월세 or 0)
             
         record_str = (
-            f"[연립다세대 전월세] | "
-            f"거래일자: {deal_date} | "
-            f"법정동명: {dong} | "
-            f"도로명주소 : {dong} {jibun} | "
-            f"연립다세대명: {mhouse_name} | "
-            f"전용면적: {area_text} | "
-            f"층수: {floor_str} | " 
-            f"거래유형: {deal_type} | "
-            f"가격: {price_text} | "
-            f"건축년도: {build_year}년 | "
-            f"계약기간: {term} | "
-            f"계약구분: {contract_type or '정보없음'} | "
-            f"갱신요구권사용여부: {use_rr}"    
+            f"{house_type}주택 {deal_type} 거래입니다. "
+            f"거래일자는 {deal_date}입니다. "
+            f"{dong} (지번: {jibun})에 위치한 "
+            f"'{mhouse_name}' {house_type}주택 {floor_str} 매물이 "
+            f"{price_text}으로 "
+            f"{'계약되었습니다.' if contract_type != '갱신' else '갱신 계약되었습니다.'} "
+            f"전용면적은 {area_text}입니다. "
+            f"건축년도는 {build_year}년입니다. "
+            f"계약기간은 {term}입니다. "
+            f"갱신요구권 사용여부는 {use_rr}입니다."
         )
+            # f"법정동명: {dong} | "
+            # f"도로명주소 : {dong} {jibun} | "
+            # f"연립다세대명: {mhouse_name} | "
+            # f"전용면적: {area_text} | "
+            # f"층수: {floor_str} | " 
+            # f"거래유형: {deal_type} | "
+            # f"가격: {price_text} | "
+            # f"건축년도: {build_year}년 | "
+            # f"계약기간: {term} | "
+            # f"계약구분: {contract_type or '정보없음'} | "
+            # f"갱신요구권사용여부: {use_rr}"    
 
         if preMonthlyRent != '0': # 종전계약월세가 있으면 월세
-            record_str += f" | 종전계약보증금: {preDeposit} / 종전계약월세: {preMonthlyRent}"
+            record_str += f" 종전계약 정보는 보증금 {preDeposit}, 월세 {preMonthlyRent}입니다."
         elif preDeposit != '0': # 종전계약보증금이 있으면 전세
-            record_str += f" | 종전계약전세금: {preDeposit}"
+            record_str += f" 종전계약 전세금은 {preDeposit}입니다."
         else:
             pass
 

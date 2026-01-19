@@ -123,41 +123,32 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
         except:
             area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
 
-        dealing_type = get_val('dealingGbn', '정보없음') # 거래유형 직거래 or 중개거래 
+        dealing_type = get_val('dealingGbn', '거래') # 거래유형 직거래 or 중개거래 
         estate_agent_location = get_val('estateAgentSggNm', '정보없음') # 중개사소재지
         
-        cdeal_type = get_val('cdealType', '') # 해제여부
+        cdeal_type = get_val('cdealType', '') # 해제여부 O or None
+
+        record_str = (
+            f"오피스텔 매매 거래입니다. "
+            f"거래일자는 {deal_date}입니다. "
+            f"{dong} (지번: {jibun})에 위치한 "
+            f"'{offi_name}' 오피스텔 {floor_str} 매물이 "
+            f"{deal_amount}에 {dealing_type}되었습니다. "
+            f"전용면적은 {area_text}이며, 건축년도는 {build_year}년입니다. "
+        )
+
+        if dealing_type == '중개거래':
+            record_str += f"중개사소재지는 {estate_agent_location}입니다. "
+
         if cdeal_type == 'O':
             cdeal_day = get_val('cdealDay','') # 해제사유발생일 ex 25.12.12 -> 2025년 12월 12일
             yy, mm, dd = cdeal_day.split('.')
             cdeal_date = f"20{yy}년 {mm.zfill(2)}월 {dd.zfill(2)}일"
+            record_str += f" 이 거래는 {cdeal_date}에 해제되었습니다."
 
-        record_str = (
-            f"[오피스텔 매매] | "
-            f"거래일자 : {deal_date} | "
-            f"법정동명 : {dong} | "
-            f"도로명주소 : {dong} {jibun} | "
-            f"단지명 : {offi_name} | "
-            f"층수 : {floor_str} | "
-            f"거래금액 : {deal_amount} | "
-            f"전용면적 : {area_text} | "
-            f"건축년도 : {build_year}년 | "
-            f"거래유형 : {dealing_type}"
-        )
-        extras = []
-
-        if dealing_type == '중개거래':
-            extras.append(f"중개사소재지: {estate_agent_location}")
-
-        if cdeal_type == 'O':
-            extras.append("거래해제여부: 해제")
-            extras.append(f"해제사유발생일: {cdeal_date}")
-
-        extras.append(f"매도자구분: {get_val('slerGbn', '정보없음')}")
-        extras.append(f"매수자구분: {get_val('buyerGbn', '정보없음')}")
-
-        if extras:
-            record_str += " | " + " | ".join(extras)
+        sler_gbn = get_val('slerGbn', '정보없음')
+        buyer_gbn = get_val('buyerGbn', '정보없음')
+        record_str += f"매도자 구분은 {sler_gbn}, 매수자 구분은 {buyer_gbn}입니다."
 
         # record_str = (
         #     f"지역코드: {str(record.get('sggCd',''))}\n"
@@ -207,7 +198,7 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
 def save_officetel_trade_data_to_txt() -> None:
     # 날짜 설정
     now = datetime.datetime.now() # 현재 날짜 -> 형식 YYYY-MM-DD
-    year = now.year
+    year = now.year 
     month = now.month
     day = now.day
     ym = f"{year}{month:02d}"
@@ -364,7 +355,7 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
 
         if mon_int > 0:
             deal_type = "월세"
-            price_text = f"보증금 {dep_fmt} / 월세 {mon_fmt}"
+            price_text = f"보증금 {dep_fmt}, 월세 {mon_fmt}"
         else:
             deal_type = "전세"
             price_text = f"전세금 {dep_fmt}"
@@ -386,7 +377,7 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
                 start, end = term_raw.split('~')
                 sy, sm = start.split('.')
                 ey, em = end.split('.')
-                term = f"20{sy}년 {sm.zfill(2)}월 ~ 20{ey}년 {em.zfill(2)}월"
+                term = f"20{sy}년 {sm.zfill(2)}월부터 20{ey}년 {em.zfill(2)}월까지"
             except:
                 term = "정보없음"
         else:
@@ -407,9 +398,9 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
                 pre_mon_int = 0
 
             if pre_mon_int > 0: # 종전 월세가 있으면 월세   
-                prev_contract_str = f"종전계약보증금: {pre_dep_fmt} / 종전계약월세: {pre_mon_fmt}"
+                prev_contract_str = f"종전계약보증금은 {pre_dep_fmt}, 종전계약월세 {pre_mon_fmt}"
             elif pre_dep_fmt != '0': # 종전 월세가 없으면 전세
-                prev_contract_str = f"종전계약전세금: {pre_dep_fmt}"
+                prev_contract_str = f"종전계약전세금은 {pre_dep_fmt}"
             else:
                 prev_contract_str = "정보없음"
 
@@ -431,21 +422,20 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
             # f"갱신요구권사용: {str(record.get('useRRRight',''))}\n"
             # f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
             # f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
-            f"[오피스텔 전월세] | "
-            f"거래일자 : {deal_date} | "
-            f"법정동명 : {dongf} | "
-            f"도로명주소 : {dong} {jibun} | "
-            f"단지명 : {offi_name} | "
-            f"층수 : {floor_str} | "
-            f"계약구분 : {contract_type} | "
-            f"거래유형 : {deal_type} | "
-            f"거래금액 : {price_text} | "
-            f"계약기간 : {term} | "
-            f"종전계약 : {prev_contract_str or '정보없음'} | "
-            f"갱신요구권 : {'사용' if use_rr == '사용' else '미사용'} | "
-            f"전용면적 : {area_text} | "
-            f"건축년도 : {build_year}년"
+            f"오피스텔 {deal_type} 거래입니다. "
+            f"거래일자는 {deal_date}입니다. "
+            f"{dong} (지번: {jibun})에 위치한 "
+            f"'{offi_name}' 오피스텔 {floor_str} 매물이 "
+            f"{price_text}으로 "
+            f"{'계약되었습니다.' if contract_type != '갱신' else '갱신 계약되었습니다.'} "
+            f"전용면적은 {area_text}이며, 건축년도는 {build_year}년입니다. "
+            f"계약기간은 {term}입니다. "
+            f"갱신요구권은 {'사용' if use_rr == '사용' else '미사용'}입니다."
         )
+
+        if prev_contract_str and contract_type == "갱신":
+            record_str += f" {prev_contract_str}입니다."
+        
         
         last_data = {
             "metadata": {

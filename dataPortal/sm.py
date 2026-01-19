@@ -137,9 +137,9 @@ def return_sm_trade_string(data: list[dict]) -> list[dict]:
         plottage_ar = get_val('plottageAr', '') # 대지면적
         total_floor_ar = get_val('totalFloorAr', '') # 연면적
 
-        dealing_gbn = get_val('dealingGbn', '') # 중개 및 직거래 여부
-        sler_gbn = get_val('slerGbn', '') # 매도자 구분
-        buyer_gbn = get_val('buyerGbn', '') # 매수자 구분
+        dealing_gbn = get_val('dealingGbn', '거래') # 중개 및 직거래 여부
+        sler_gbn = get_val('slerGbn', '기타') # 매도자 구분
+        buyer_gbn = get_val('buyerGbn', '기타') # 매수자 구분
 
         # 평수 환산
         try:
@@ -155,22 +155,18 @@ def return_sm_trade_string(data: list[dict]) -> list[dict]:
             total_floor_text = f"{total_floor_ar}㎡"
 
         record_str = (
-            f"[단독/다가구 매매] | "
-            f"거래일자: {deal_date} | "
-            f"법정동: {dong} | "
-            f"주택유형: {house_type} | "
-            f"대지면적: {plottage_text} | "
-            f"연면적: {total_floor_text} | "
-            f"건축년도: {build_year}년 | "
-            f"거래금액: {deal_amount} | "
-            f"매도자: {sler_gbn} | "
-            f"매수자: {buyer_gbn} | "
-            f"거래유형: {dealing_gbn}"
+            f"{house_type}주택 매매 거래입니다. "
+            f"거래일자는 {deal_date} 입니다. "
+            f"{dong} (지번: {jibun})에 위치한 "
+            f"{house_type}주택 매물이 {deal_amount}에 {dealing_gbn}되었습니다. "
+            f"연면적 {total_floor_text}, 대지면적 {plottage_text}입니다. "
+            f"건축년도는 {build_year}년입니다. "
+            f"매도자 구분은 {sler_gbn}, 매수자 구분은 {buyer_gbn}입니다."
         )
 
         if dealing_gbn == "중개거래":
             estate_agent_sgg_nm = get_val('estateAgentSggNm', '')
-            record_str += f" | 중개사소재지: {estate_agent_sgg_nm}"
+            record_str += f" 중개사소재지는 {estate_agent_sgg_nm}입니다."
         
         cdeal_type = get_val('cdealType', '')
 
@@ -178,8 +174,7 @@ def return_sm_trade_string(data: list[dict]) -> list[dict]:
             cdeal_day = get_val('cdealDay', '') # 해제사유발생일 ex 25.01.12 -> 2025년 01월 12일
             cdeal_year, cdeal_month, cdeal_day_part = cdeal_day.split('.')
             cdeal_day_formatted = f"20{cdeal_year}년 {cdeal_month}월 {cdeal_day_part}일"
-            record_str += f" | 거래해제여부: 해제"
-            record_str += f" | 해제사유발생일: {cdeal_day_formatted}"
+            record_str += f" 이 거래는 해제된 거래로, 해제사유발생일은 {cdeal_day_formatted}입니다."
 
         # 메타데이터 추가
         last_data = {
@@ -373,7 +368,7 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
 
         if mon_int > 0:
             deal_type = "월세"
-            price_text = f"보증금 {dep_fmt} / 월세 {mon_fmt}"
+            price_text = f"보증금 {dep_fmt}, 월세 {mon_fmt}"
         else:
             deal_type = "전세"
             price_text = f"전세금 {dep_fmt}"
@@ -387,7 +382,7 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
             area_text = f"{area_raw}㎡ (약 {float(area_raw) / 3.3058:.1f}평)"
 
         # --- 5. 계약 및 갱신 정보 ---
-        contract_type = get_val('contractType') # 신규/갱신/공백 계약구분 
+        contract_type = get_val('contractType', '신규') # 신규/갱신/공백 계약구분 
         term_raw = get_val('contractTerm')
 
         if term_raw and '~' in term_raw:
@@ -395,7 +390,7 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
                 start, end = term_raw.split('~')
                 sy, sm = start.split('.')
                 ey, em = end.split('.')
-                term = f"20{sy}년 {sm.zfill(2)}월 ~ 20{ey}년 {em.zfill(2)}월"
+                term = f"20{sy}년 {sm.zfill(2)}월부터 20{ey}년 {em.zfill(2)}월까지"
             except:
                 term = "정보없음"
         else:
@@ -404,17 +399,24 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
         # 갱신일 경우 종전 계약 정보 구성
 
         record_str = (
-            f"[단독/다가구 전월세] | "
-            f"거래일자: {deal_date} | "
-            f"법정동: {dong} | "
-            f"주택유형: {house_type} | "
-            f"건축년도: {build_year}년 | "
-            f"연면적: {area_text} | "
-            f"거래유형: {deal_type} | "
-            f"거래금액: {price_text} | "
-            f"갱신요구권: {'사용' if use_rr == '사용' else '미사용'} | "
-            f"계약구분: {contract_type or '정보없음'} | "
-            f"계약기간: {term}"
+            f"{house_type}주택 {deal_type} 거래입니다. "
+            f"거래일자는 {deal_date} 입니다. "
+            f"{dong}에 위치한 "
+            f"{house_type}주택 매물이 "
+            f"{price_text}에 {contract_type}거래 되었습니다. "
+            f"건축년도는 {build_year}년이며, 연면적은 {area_text}입니다. "
+            f"갱신요구권은 {'사용' if use_rr == '사용' else '미사용'} 상태입니다. "
+            f"계약기간은 {term}입니다."
+            # f"거래일자: {deal_date
+            # f"법정동: {dong} | "
+            # f"주택유형: {house_type} | "
+            # f"건축년도: {build_year}년 | "
+            # f"연면적: {area_text} | "
+            # f"거래유형: {deal_type} | "
+            # f"거래금액: {price_text} | "
+            # f"갱신요구권: {'사용' if use_rr == '사용' else '미사용'} | "
+            # f"계약구분: {contract_type or '정보없음'} | "
+            # f"계약기간: {term}"
         )
             
         if contract_type == "갱신":
@@ -428,9 +430,11 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
                 pre_mon_int = 0
 
             if pre_mon_int > 0: # 종전 월세가 있으면 월세
-                record_str += f" | 종전계약보증금: {pre_dep_fmt} / 종전계약월세: {pre_mon_fmt}"
+                record_str += f" 종전계약보증금은 {pre_dep_fmt}, 종전계약월세는 {pre_mon_fmt}입니다."
             elif pre_dep_fmt != '0':
-                record_str += f" | 종전계약전세금: {pre_dep_fmt}"
+                record_str += f" 종전계약전세금은 {pre_dep_fmt}입니다."
+            else:
+                record_str += " 종전계약정보가 없습니다."
 
         # 메타데이터 추가
         last_data = {
