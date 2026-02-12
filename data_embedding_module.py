@@ -173,70 +173,104 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
             conn.close()
     
 
-# # ------------------------------------------------------------------------------
-# # 4. 자동화 실행 로직 (Batch Automation)
-# # ------------------------------------------------------------------------------
-# def run_batch_indexing(embeddings: Embeddings, pattern: str = "apt_rent_data_*.txt"):
-#     """
-#     지정된 패턴의 모든 파일을 찾아 자동으로 순차 색인합니다.
-#     """
-#     # 1. 파일 목록 가져오기 및 정렬
-#     files = sorted(glob.glob(pattern))
+# ------------------------------------------------------------------------------
+# 4. 자동화 로직 (안전장치 및 파일 순회 기능 추가)
+# ------------------------------------------------------------------------------
+def run_full_automation(embeddings: Embeddings):
+    """
+    여러 파일 패턴을 자동으로 탐색하고,
+    DB 적재 함수를 호출하기 전에 '데이터 검증(안전장치)'을 수행합니다.
+    """
     
-#     if not files:
-#         print(f"[Info] '{pattern}' 패턴과 일치하는 파일을 찾을 수 없습니다.")
-#         return
+    # 1. 처리할 파일 패턴 목록 (사용자 요청 반영)
+    # 날짜 부분(202xxxxx)을 *로 처리하여 모든 날짜 파일을 인식합니다.
+    target_patterns = [
+        "apt_data_*.txt",        # 아파트 데이터
+        "land_data_*.txt",       # 토지 데이터
+        "bitkinds_news_*.txt",   # 뉴스 데이터
+        "officetel_data_*.txt",  # 오피스텔 데이터
+        "apt_rent_data_*.txt"    # 기존 전월세 데이터
+    ]
 
-#     print(f"\n🚀 [Automation] 총 {len(files)}개의 파일 색인을 시작합니다.")
+    print(f"\n🚀 [Automation] 다중 카테고리 데이터 적재 시작")
 
-#     for i, file_path in enumerate(files):
-#         print(f"\n--- [작업 {i+1}/{len(files)}] {file_path} ---")
+    total_files = 0
+
+    for pattern in target_patterns:
+        # 패턴에 맞는 파일 찾기 (날짜 무관, 정렬하여 순서대로 처리)
+        files = sorted(glob.glob(pattern))
         
-#         try:
-#             # 첫 번째 파일일 때만 DB 테이블을 초기화하고, 이후에는 데이터를 누적함
-#             is_initial_file = (i == 0)
-            
-#             # 데이터 로드 (청킹 모듈 함수 호출)
-#             raw_data = load_raw_jsonl_file(file_path)
-#             # 청킹 수행 (청킹 모듈 함수 호출)
-#             chunks = create_and_chunk_documents(raw_data)
-            
-#             # 임베딩 및 DB 저장
-#             save_to_vector_db(chunks, embeddings, reset_db=is_initial_file)
-            
-#         except Exception as e:
-#             print(f"❌ [Error] {file_path} 처리 실패: {e}")
-#             continue
+        if not files:
+            continue
 
-#     print("\n✅ [Automation] 모든 파일의 자동 색인 작업이 완료되었습니다.")
+        print(f"\n📂 [카테고리] '{pattern}' 패턴 파일 {len(files)}개 발견")
+        
+        for file_path in files:
+            print(f"\n--- [Processing] {file_path} ---")
+            try:
+                # (1) 파일 로드 및 청킹
+                raw_data = load_raw_jsonl_file(file_path)
+                chunks = create_and_chunk_documents(raw_data)
+                
+                # (2) [안전장치] DB 함수 호출 전, ID 누락 검사 및 보정
+                # DB 함수를 건드리지 않고, 들어가는 데이터(chunks)를 미리 수정합니다.
+                fixed_count = 0
+                for doc in chunks:
+                    current_id = doc.metadata.get("rdb_id") or doc.metadata.get("id")
+                    if not current_id:
+                        # ID가 없으면 메타데이터에 'rdb_id'를 강제로 주입
+                        doc.metadata["rdb_id"] = f"AUTO_{uuid.uuid4().hex[:8]}"
+                        fixed_count += 1
+                
+                if fixed_count > 0:
+                    print(f"   ⚠️ [Safety] ID가 없는 {fixed_count}개 데이터에 임시 ID를 발급했습니다.")
 
+                # (3) DB 적재 함수 호출 (검증된 chunks 전달)
+                save_to_specific_table(chunks, embeddings)
+                
+                total_files += 1
+                
+            except Exception as e:
+                print(f"❌ [Error] {file_path} 처리 실패: {e}")
+                continue
 
+    print(f"\n✅ [완료] 총 {total_files}개의 파일 처리가 끝났습니다.")
 
 
 # ------------------------------------------------------------------------------
-# 5. 메인 실행 (테스트)
+# 5. 메인 실행부
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     # 1. 모델 로드
-    ko_sbert_model = load_embedding_model()
+    model = load_embedding_model()
 
-    # --- [Mode 1] 데이터 색인 ---
-    file_path = 'apt_rent_data_20260111.txt' # 파일명 확인
-
-    # # 2. 자동화 모드 실행
-    # run_batch_indexing(openai_model, pattern="apt_rent_data_*.txt")
+    # 2. 자동화 시스템 가동
+    run_full_automation(model)
     
-    if os.path.exists(file_path):
-        print("\n=== [Mode 1] 지식 기반 구축 (데이터 색인) ===")
-        # 청킹 모듈 호출
-        raw_texts = load_raw_jsonl_file(file_path)
-        final_chunks = create_and_chunk_documents(raw_texts)
-        
-        # DB 저장 실행
-        save_to_specific_table(final_chunks, ko_sbert_model)
-    else:
-        print(f"\n[Info] 데이터 파일('{file_path}')이 없어 데이터 색인 과정을 건너뜁니다.")
+# ------------------------------------------------------------------------------
+# 5. 메인 실행 (테스트)
+# ------------------------------------------------------------------------------
+# if __name__ == "__main__":
+#     # 1. 모델 로드
+#     ko_sbert_model = load_embedding_model()
 
-    # --- [Mode 2] 사용자 질문 벡터화 ---
-    print("\n=== [Mode 2] 사용자 질문 임베딩 테스트 ===")
-    test_question = "강남 반포자이 최근 6개월 전세 시세 알려줘."
+#     # --- [Mode 1] 데이터 색인 ---
+#     file_path = 'apt_rent_data_20260111.txt' # 파일명 확인
+
+#     # # 2. 자동화 모드 실행
+#     # run_batch_indexing(openai_model, pattern="apt_rent_data_*.txt")
+    
+#     if os.path.exists(file_path):
+#         print("\n=== [Mode 1] 지식 기반 구축 (데이터 색인) ===")
+#         # 청킹 모듈 호출
+#         raw_texts = load_raw_jsonl_file(file_path)
+#         final_chunks = create_and_chunk_documents(raw_texts)
+        
+#         # DB 저장 실행
+#         save_to_specific_table(final_chunks, ko_sbert_model)
+#     else:
+#         print(f"\n[Info] 데이터 파일('{file_path}')이 없어 데이터 색인 과정을 건너뜁니다.")
+
+#     # --- [Mode 2] 사용자 질문 벡터화 ---
+#     print("\n=== [Mode 2] 사용자 질문 임베딩 테스트 ===")
+#     test_question = "강남 반포자이 최근 6개월 전세 시세 알려줘."
