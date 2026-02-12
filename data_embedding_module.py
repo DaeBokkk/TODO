@@ -1,5 +1,8 @@
 import os
 import time
+import glob  # 폴더 내 여러 파일을 찾기 위한 라이브러리
+import uuid
+import json
 from typing import List
 import psycopg2 # [수정] 사용자가 설치한 psycopg2-binary 사용
 
@@ -18,6 +21,7 @@ except ImportError:
 # ------------------------------------------------------------------------------
 # 1. [설계 설정] 임베딩 모델 및 DB 연결 설정
 # ------------------------------------------------------------------------------
+# DB 정보
 
 # (1) 임베딩 모델 설정 (KO-SBERT)
 MODEL_ID = "jhgan/ko-sbert-nli"
@@ -25,16 +29,18 @@ MODEL_DEVICE = "cpu"
 
 # (2) PostgreSQL DB 연결 정보 (Ngrok 정보 반영)
 DB_HOST = "0.tcp.jp.ngrok.io"
-DB_PORT = "18757"  # 포트 번호 확인 필요
+DB_PORT = "16069"  # 포트 번호 확인 필요
 DB_USER = "rag"
 DB_PASSWORD = "rag"
 DB_NAME = "rag"
 
 # [중요] LangChain PGVector는 SQLAlchemy 형식의 연결 문자열을 사용합니다.
-DB_CONNECTION_STRING = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# DB_CONNECTION_STRING = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-# (3) 벡터 컬렉션 이름
-COLLECTION_NAME = "embedding_vector_ko_sbert"
+# (3) [중요] 타겟 테이블 및 컬럼 설정 (사용자 정의 스키마)
+COLLECTION_TABLE = "public.ko_sbert_collection"
+EMBEDDING_TABLE = "public.ko_sbert_embedding"
+COLLECTION_NAME = "embedding_vector_ko_sbert" # 사용할 컬렉션 이름
 
 
 # ------------------------------------------------------------------------------
@@ -56,85 +62,155 @@ def load_embedding_model() -> Embeddings:
     print(f"[System] 로딩 완료 ({time.time() - start:.2f}초)")
     return embeddings
 
-
 # ------------------------------------------------------------------------------
-# 3. [표준] 벡터 DB 저장 함수 (LangChain PGVector 사용)
+# 3. [핵심] 사용자 정의 테이블 적재 함수 (Relational Insert)
 # ------------------------------------------------------------------------------
-def fix_db_schema_conflict():
+def get_or_create_collection_id(cursor, collection_name):
     """
-    [오류 해결용] 'collection_id' 컬럼 없음 오류를 해결하기 위해
-    기존의 잘못된 테이블을 강제로 삭제하고 초기화합니다.
+    컬렉션 테이블(ko_sbert_collection)에서 ID를 조회하거나 생성합니다.
     """
-    print("⚠️ [DB Fix] 기존 테이블 스키마 충돌 감지. 테이블 초기화를 시도합니다...")
-    try:
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            dbname=DB_NAME
-        )
-        cur = conn.cursor()
-        # LangChain이 사용하는 기본 테이블들을 삭제 (재생성을 유도)
-        cur.execute("DROP TABLE IF EXISTS langchain_pg_embedding CASCADE;")
-        cur.execute("DROP TABLE IF EXISTS langchain_pg_collection CASCADE;")
-        conn.commit()
-        cur.close()
-        conn.close()
-        print("✅ [DB Fix] 기존 테이블 삭제 완료. 이제 LangChain이 올바른 테이블을 새로 생성합니다.")
-    except Exception as e:
-        print(f"❌ [DB Fix] 초기화 중 오류 발생 (무시 가능): {e}")
+    # 1. 이미 존재하는지 확인
+    select_sql = f"SELECT uuid FROM {COLLECTION_TABLE} WHERE name = %s"
+    cursor.execute(select_sql, (collection_name,))
+    result = cursor.fetchone()
+    
+    if result:
+        return result[0] # 기존 ID 반환
+    
+    # 2. 없으면 새로 생성 (표준 UUID 필요)
+    new_uuid = str(uuid.uuid4())
+    # cmetadata 컬럼은 JSON 형식이므로 json.dumps 필요
+    insert_sql = f"INSERT INTO {COLLECTION_TABLE} (uuid, name, cmetadata) VALUES (%s, %s, %s)"
+    cursor.execute(insert_sql, (new_uuid, collection_name, json.dumps({"description": "Real Estate Data"})))
+    
+    return new_uuid
 
-
-def save_to_vector_db(documents: List[Document], embeddings: Embeddings):
+def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
     """
-    LangChain의 표준 PGVector 모듈을 사용하여 데이터를 저장합니다.
+    LangChain을 통하지 않고, psycopg2로 직접 데이터를 INSERT 합니다.
     """
     if not documents:
-        print("[Warning] 저장할 문서가 없습니다.")
         return
+
+    print(f"\n[System] 사용자 정의 테이블 적재 시작 (총 {len(documents)}건)")
     
-    # [수정] 저장 전에 스키마 충돌 방지를 위해 테이블 초기화 실행
-    # 주의: 이 코드는 기존 데이터를 날립니다. (초기 구축 단계이므로 안전하다고 가정)
-    fix_db_schema_conflict()
-
-    print(f"\n[System] 벡터 DB 저장 시작 (총 {len(documents)}개 청크)")
-    print(f" -> 접속 정보: {DB_HOST}:{DB_PORT}")
-    print(f" -> 컬렉션명: {COLLECTION_NAME}")
-
+    # 1. 텍스트 리스트 추출 및 일괄 벡터화 (속도 최적화)
+    texts = [doc.page_content for doc in documents]
     try:
-        # PGVector.from_documents 메서드
-        # 테이블이 없으면 자동으로 생성합니다.
-        db = PGVector.from_documents(
-            embedding=embeddings,
-            documents=documents,
-            collection_name=COLLECTION_NAME,
-            connection_string=DB_CONNECTION_STRING,
-            pre_delete_collection=False 
+        print(" -> 벡터화 진행 중...")
+        vectors = embeddings.embed_documents(texts)
+    except Exception as e:
+        print(f"[Error] 임베딩 변환 실패: {e}")
+        return
+
+    # 2. DB 연결 및 트랜잭션 처리
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD, dbname=DB_NAME
         )
+        cur = conn.cursor()
+
+        # (1) 컬렉션 ID 확보 (Foreign Key 연결을 위해 필수)
+        collection_id = get_or_create_collection_id(cur, COLLECTION_NAME)
         
-        print("[Success] 모든 데이터가 성공적으로 벡터 DB에 저장(색인)되었습니다.")
-        
+        # (2) 임베딩 데이터 INSERT 쿼리
+        # 스키마 순서: uuid, collection_id, embedding, document, cmetadata, custom_id
+        insert_sql = f"""
+            INSERT INTO {EMBEDDING_TABLE} (
+                uuid, 
+                collection_id, 
+                embedding, 
+                document, 
+                cmetadata, 
+                custom_id
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+        """
+
+        success_count = 0
+        for i, doc in enumerate(documents):
+            # [UUID] DB의 PK용 표준 UUID 생성 (필수)
+            row_uuid = str(uuid.uuid4())
+            
+            # [Vector]
+            vector = vectors[i]
+            
+            # [Content]
+            content = doc.page_content
+            
+            # [JSON] 파이썬 딕셔너리를 JSON 문자열로 변환 (필수)
+            meta_json = json.dumps(doc.metadata)
+            
+            # [Custom ID] 파일에 있던 원래 ID (RENT_...)는 여기에 저장
+            # 메타데이터에 'id' 또는 'rdb_id' 키가 있다고 가정
+            custom_id = doc.metadata.get("rdb_id") or doc.metadata.get("id")
+            if not custom_id:
+                # 데이터에 ID가 없을 경우 임시 ID 생성
+                custom_id = f"AUTO_{uuid.uuid4().hex[:8]}"
+
+            # 쿼리 실행
+            cur.execute(insert_sql, (
+                row_uuid,
+                collection_id,
+                vector,
+                content,
+                meta_json,
+                custom_id
+            ))
+            success_count += 1
+
+        conn.commit()
+        print(f"[Success] 총 {success_count}건 적재 완료.")
+        print(f" -> Collection ID: {collection_id}")
+
     except Exception as e:
-        print(f"[Error] DB 저장 중 오류 발생: {e}")
-        print(" -> 팁: Ngrok 포트가 변경되었는지 확인하세요.")
+        print(f"[Error] DB 적재 중 오류 발생: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+    
+
+# # ------------------------------------------------------------------------------
+# # 4. 자동화 실행 로직 (Batch Automation)
+# # ------------------------------------------------------------------------------
+# def run_batch_indexing(embeddings: Embeddings, pattern: str = "apt_rent_data_*.txt"):
+#     """
+#     지정된 패턴의 모든 파일을 찾아 자동으로 순차 색인합니다.
+#     """
+#     # 1. 파일 목록 가져오기 및 정렬
+#     files = sorted(glob.glob(pattern))
+    
+#     if not files:
+#         print(f"[Info] '{pattern}' 패턴과 일치하는 파일을 찾을 수 없습니다.")
+#         return
+
+#     print(f"\n🚀 [Automation] 총 {len(files)}개의 파일 색인을 시작합니다.")
+
+#     for i, file_path in enumerate(files):
+#         print(f"\n--- [작업 {i+1}/{len(files)}] {file_path} ---")
+        
+#         try:
+#             # 첫 번째 파일일 때만 DB 테이블을 초기화하고, 이후에는 데이터를 누적함
+#             is_initial_file = (i == 0)
+            
+#             # 데이터 로드 (청킹 모듈 함수 호출)
+#             raw_data = load_raw_jsonl_file(file_path)
+#             # 청킹 수행 (청킹 모듈 함수 호출)
+#             chunks = create_and_chunk_documents(raw_data)
+            
+#             # 임베딩 및 DB 저장
+#             save_to_vector_db(chunks, embeddings, reset_db=is_initial_file)
+            
+#         except Exception as e:
+#             print(f"❌ [Error] {file_path} 처리 실패: {e}")
+#             continue
+
+#     print("\n✅ [Automation] 모든 파일의 자동 색인 작업이 완료되었습니다.")
 
 
-# ------------------------------------------------------------------------------
-# 4. 사용자 질문 임베딩 함수 (검색용)
-# ------------------------------------------------------------------------------
-def embed_user_query(query: str, embeddings: Embeddings) -> List[float]:
-    """
-    사용자의 질문을 벡터로 변환합니다.
-    """
-    print(f"\n[System] 사용자 질문 벡터화: '{query}'")
-    try:
-        query_vector = embeddings.embed_query(query)
-        print(f"[Success] 변환 완료 (차원: {len(query_vector)})")
-        return query_vector
-    except Exception as e:
-        print(f"[Error] 질문 변환 실패: {e}")
-        return []
 
 
 # ------------------------------------------------------------------------------
@@ -145,7 +221,10 @@ if __name__ == "__main__":
     ko_sbert_model = load_embedding_model()
 
     # --- [Mode 1] 데이터 색인 ---
-    file_path = 'apt_rent_data_20251130.txt' # 파일명 확인
+    file_path = 'apt_rent_data_20260111.txt' # 파일명 확인
+
+    # # 2. 자동화 모드 실행
+    # run_batch_indexing(openai_model, pattern="apt_rent_data_*.txt")
     
     if os.path.exists(file_path):
         print("\n=== [Mode 1] 지식 기반 구축 (데이터 색인) ===")
@@ -154,15 +233,10 @@ if __name__ == "__main__":
         final_chunks = create_and_chunk_documents(raw_texts)
         
         # DB 저장 실행
-        save_to_vector_db(final_chunks, ko_sbert_model)
+        save_to_specific_table(final_chunks, ko_sbert_model)
     else:
         print(f"\n[Info] 데이터 파일('{file_path}')이 없어 데이터 색인 과정을 건너뜁니다.")
 
     # --- [Mode 2] 사용자 질문 벡터화 ---
     print("\n=== [Mode 2] 사용자 질문 임베딩 테스트 ===")
     test_question = "강남 반포자이 최근 6개월 전세 시세 알려줘."
-    
-    vector_result = embed_user_query(test_question, ko_sbert_model)
-    
-    if vector_result:
-        print(f"생성된 벡터 예시 (앞 5개): {vector_result[:5]} ...")
