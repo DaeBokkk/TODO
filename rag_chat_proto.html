@@ -41,6 +41,7 @@
       line-height: 1.4;
       word-break: keep-all;
       font-size: 0.95rem;
+      white-space: pre-wrap;
     }
 
     .user {
@@ -113,10 +114,9 @@
       msg.textContent = text;
       chatBox.appendChild(msg);
       chatBox.scrollTop = chatBox.scrollHeight;
+      return msg; 
     }
 
-    // 기존 sendMessage 함수를 아래와 같이 수정하세요.
-    // 'async' 키워드가 함수 앞에 추가되어야 합니다.
     async function sendMessage() {
       const text = input.value.trim();
       if (!text) return;
@@ -125,34 +125,54 @@
       appendMessage(text, 'user');
       input.value = '';
 
+      // [수정] 로딩 메시지 초기화
+      const loadingTextBase = "답변 생성 중입니다";
+      const loadingMsg = appendMessage(loadingTextBase + ".", 'bot');
+      
+      // [추가] 점(.) 애니메이션 로직
+      let dotCount = 1;
+      const loadingInterval = setInterval(() => {
+        dotCount = (dotCount % 3) + 1; // 1 -> 2 -> 3 -> 1 반복
+        loadingMsg.textContent = loadingTextBase + ".".repeat(dotCount);
+      }, 500); // 0.5초마다 갱신
+
       try {
-        // 2. 백엔드 서버로 요청(Request) 보내기
-        // 예시 URL: http://localhost:8000/chat (백엔드 설정에 따라 다름)
-        const response = await fetch('http://192.168.219.78:8000/v1/chat', {
-          method: 'POST', // 데이터를 보내므로 POST 방식 사용
+        // 2. 백엔드 서버로 요청 보내기
+        const response = await fetch('http://1.228.84.122:8000/v1/chat', {
+          method: 'POST',
           headers: {
-            'Content-Type': 'application/json', // JSON 형식으로 보냄을 명시
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             prompt: {
               user: text,
               session_id: "user_1234"
-            }          
-          }), // 사용자 입력을 JSON 문자열로 변환하여 전송
+            }
+          }),
         });
 
-        // 3. 응답(Response) 받기
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
 
-        const data = await response.json(); // 서버에서 온 JSON 데이터 파싱
+        const data = await response.json();
 
-        // 4. 봇의 응답을 화면에 표시 (백엔드에서 'answer'라는 키로 값을 준다고 가정)
+        // [추가] 응답 오면 애니메이션 타이머 정지
+        clearInterval(loadingInterval);
+        
+        // 로딩 메시지 삭제
+        loadingMsg.remove();
+
+        // 4. 진짜 봇의 응답 표시
         appendMessage(data.answer, 'bot');
 
       } catch (error) {
         console.error('Error:', error);
+        
+        // [추가] 에러 시에도 애니메이션 타이머 정지
+        clearInterval(loadingInterval);
+        
+        loadingMsg.remove();
         appendMessage("오류가 발생했습니다. 다시 시도해주세요.", 'bot');
       }
     }
