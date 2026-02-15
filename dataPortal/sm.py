@@ -7,6 +7,7 @@ import dotenv
 import datetime
 from dataPortal import region
 import json
+import glob
 # 초기화
 dotenv.load_dotenv()
 DATAGO_KEY = os.getenv("DATAGO_KEY")
@@ -203,12 +204,14 @@ def save_sm_trade_data_to_txt() -> None:
     text_strings: list[dict] = return_sm_trade_string(total_df)
 
     # 중복 제거 로직 추가
-    # 전날 파일 경로 
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"    
-    yesterday_filepath = f"txts/sm_real_estate/sm_data_{yesterday_filedate}.txt"
-    
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    previous_hashes = set()
+    folder_path = "txts/sm_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
+
+    for file in glob.glob(os.path.join(folder_path, f"sm_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
 
     filtered_list: list[dict] = []
@@ -222,8 +225,6 @@ def save_sm_trade_data_to_txt() -> None:
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/sm_real_estate/sm_data_{filedate}.txt" # 파일명 설정 -> real_estate/sm_documents_YYYYMMDD.txt
-    
-    os.makedirs(os.path.dirname(filename), exist_ok=True) # 디렉토리 없으면 생성
 
     with open(filename, 'w', encoding='utf-8') as f:
         for text in filtered_list:
@@ -464,12 +465,14 @@ def save_sm_rent_data_to_txt() -> None:
     text_strings: list[dict] = return_sm_rent_string(total_df)
 
     # 중복 제거 로직 추가
-    # 전날 파일 경로
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"    
-    yesterday_filepath = f"txts/sm_real_estate/sm_rent_data_{yesterday_filedate}.txt"
-    
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    previous_hashes = set()
+    folder_path = "txts/sm_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
+
+    for file in glob.glob(os.path.join(folder_path, f"sm_rent_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")  
 
     filtered_list: list[dict] = []

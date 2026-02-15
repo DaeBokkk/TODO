@@ -8,6 +8,7 @@ import dotenv
 import datetime
 from dataPortal import region
 import json
+import glob
 
 # 초기화
 dotenv.load_dotenv()
@@ -209,10 +210,14 @@ def save_officetel_trade_data_to_txt() -> None:
 
     # 중복 로직 시작
     # 전날 파일 경로
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
-    yesterday_filepath = f"txts/officetel_real_estate/officetel_data_{yesterday_filedate}.txt"  
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    previous_hashes = set()
+    folder_path = "txts/officetel_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
+
+    for file in glob.glob(os.path.join(folder_path, f"officetel_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
     # 중복 제거 후 최종 저장할 데이터 리스트
     filtered_list: list[dict] = []  
@@ -463,11 +468,14 @@ def save_officetel_rent_data_to_txt() -> None:
     officetel_rent_strings = return_officetel_rent_string(officetel_rent_data)
 
     # 중복 로직 시작
-    # 전날 파일 경로
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
-    yesterday_filepath = f"txts/officetel_real_estate/officetel_rent_data_{yesterday_filedate}.txt"  
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    previous_hashes = set()
+    folder_path = "txts/officetel_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
+
+    for file in glob.glob(os.path.join(folder_path, f"officetel_rent_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
     # 중복 제거 후 최종 저장할 데이터 리스트
     filtered_list: list[dict] = []

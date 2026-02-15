@@ -7,6 +7,7 @@ import os
 import dotenv
 import datetime
 import json
+import glob
 # 초기화
 dotenv.load_dotenv()
 DATAGO_KEY = os.getenv("DATAGO_KEY")
@@ -258,10 +259,14 @@ def save_rh_trade_data_to_txt() -> None:
     rh_strings = return_rh_trade_string(all_rh_data)
 
     # 중복 제거 로직 시작
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"    
-    yesterday_filepath = f"txts/rh_real_estate/rh_data_{yesterday_filedate}.txt"    
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    previous_hashes = set()
+    folder_path = "txts/rh_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
+
+    for file in glob.glob(os.path.join(folder_path, f"rh_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
 
     filtered_list: list[dict] = []
@@ -536,10 +541,14 @@ def save_rh_rent_data_to_txt() -> None:
     filename = f"txts/rh_real_estate/rh_rent_data_{filedate}.txt"
 
     # 중복 제거 로직 시작
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"    
-    yesterday_filepath = f"txts/rh_real_estate/rh_rent_data_{yesterday_filedate}.txt"    
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    previous_hashes = set()
+    folder_path = "txts/rh_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
+
+    for file in glob.glob(os.path.join(folder_path, f"rh_rent_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")  
     
     filtered_list: list[dict] = []

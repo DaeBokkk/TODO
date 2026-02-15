@@ -10,6 +10,7 @@ from dataPortal import region
 import json
 import schedule
 import time
+import glob
 # 초기화
 dotenv.load_dotenv()
 DATAGO_KEY = os.getenv("DATAGO_KEY")
@@ -293,12 +294,14 @@ def save_land_trade_data_to_txt() -> None:
     text_strings: list[str] = return_land_trade_string(total_data)
 
     # ######################중복 로직 추가 
-    # 전날 파일 경로
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
-    yesterday_filepath = f"txts/land_real_estate/land_data_{yesterday_filedate}.txt"
+    previous_hashes = set()
+    folder_path = "txts/land_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    for file in glob.glob(os.path.join(folder_path, f"land_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
     # 중복 제거
     filtered_list: list[dict] = []

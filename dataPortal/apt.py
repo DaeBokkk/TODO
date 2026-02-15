@@ -8,6 +8,7 @@ import schedule
 import time
 import json
 import os
+import glob
 
 # 아파트 매매 실거래가 txt 파일로 저장하는 함수 구현
 def save_apt_data_to_txt() -> None:
@@ -25,11 +26,14 @@ def save_apt_data_to_txt() -> None:
     text_strings: list[dict] = apt_sub.return_apt_string(total_df)
 
     # 중복 로직 추가 
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
-    yesterday_filepath = f"txts/apt_real_estate/apt_data_{yesterday_filedate}.txt"
+    previous_hashes = set()
+    folder_path = "txts/apt_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    for file in glob.glob(os.path.join(folder_path, f"apt_data_{ym}*.txt")): # 경로는 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
     filtered_list: list[dict] = []
     for rent in text_strings:
@@ -60,11 +64,14 @@ def save_apt_rent_data_to_txt():
     rent_strings = apt_sub.return_apt_rent_string(rent_data)
 
     # 중복 로직 추가 
-    yesterday = now - datetime.timedelta(days=1)
-    yesterday_filedate = f"{yesterday.year}{yesterday.month:02d}{yesterday.day:02d}"
-    yesterday_filepath = f"txts/apt_real_estate/apt_rent_data_{yesterday_filedate}.txt"
+    previous_hashes = set()
+    folder_path = "txts/apt_real_estate"
+    os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    previous_hashes = load_previous_hashes(yesterday_filepath)
+    for file in glob.glob(os.path.join(folder_path, f"apt_rent_data_{ym}*.txt")): 
+        file_hashes = load_previous_hashes(file)
+        previous_hashes.update(file_hashes)
+
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
     
     filtered_list: list[dict] = []
