@@ -279,6 +279,10 @@ def save_rh_trade_data_to_txt() -> None:
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     # 중복 제거 로직 끝
 
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
+
     # 파일명 설정
     filename = f"txts/rh_real_estate/rh_data_{filedate}.txt"
 
@@ -560,6 +564,10 @@ def save_rh_rent_data_to_txt() -> None:
             filtered_list.append(rent)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     # 중복 제거 로직 끝
+
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
 
     # 텍스트 파일로 저장
     with open(filename, "w", encoding="utf-8") as f:

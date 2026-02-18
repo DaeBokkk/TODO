@@ -209,7 +209,6 @@ def save_officetel_trade_data_to_txt() -> None:
     officetel_strings = return_officetel_string(officetel_data)
 
     # 중복 로직 시작
-    # 전날 파일 경로
     previous_hashes = set()
     folder_path = "txts/officetel_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
@@ -229,7 +228,11 @@ def save_officetel_trade_data_to_txt() -> None:
             filtered_list.append(record)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     # 중복 로직 끝
-    #                 
+    
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
+
     # txts/officetel_real_estate/ 폴더에 저장
     filename = f"txts/officetel_real_estate/officetel_data_{filedate}.txt"
     # 텍스트 파일로 생성해서 저장
@@ -487,6 +490,10 @@ def save_officetel_rent_data_to_txt() -> None:
             filtered_list.append(record)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     # 중복 로직 끝
+    
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
 
     filename = f"txts/officetel_real_estate/officetel_rent_data_{filedate}.txt"
     # 텍스트 파일로 생성해서 저장

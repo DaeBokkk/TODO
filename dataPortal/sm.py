@@ -223,6 +223,10 @@ def save_sm_trade_data_to_txt() -> None:
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     ############# 중복 로직 끝 ######################
 
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
+
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/sm_real_estate/sm_data_{filedate}.txt" # 파일명 설정 -> real_estate/sm_documents_YYYYMMDD.txt
 
@@ -484,6 +488,10 @@ def save_sm_rent_data_to_txt() -> None:
             filtered_list.append(rent)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     ############# 중복 로직 끝 ######################
+
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/sm_real_estate/sm_rent_data_{filedate}.txt" # 파일명 설정 -> real_estate/sm_rent_documents_YYYYMMDD.txt

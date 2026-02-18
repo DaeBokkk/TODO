@@ -44,6 +44,10 @@ def save_apt_data_to_txt() -> None:
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     ############# 중복 로직 끝 ######################
 
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
+
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     filename = f"txts/apt_real_estate/apt_data_{filedate}.txt" # 파일명 설정 -> real_estate/apt_documents_YYYYMMDD.txt
     with open(filename, 'w', encoding='utf-8') as f:
@@ -82,6 +86,10 @@ def save_apt_rent_data_to_txt():
             filtered_list.append(rent)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     ############# 중복 로직 끝 ######################
+
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
     
     # 파일 저장
     filename = f"txts/apt_real_estate/apt_rent_data_{date}.txt"

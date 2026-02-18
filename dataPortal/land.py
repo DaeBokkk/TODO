@@ -86,60 +86,6 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
     
     return all_land_data
 
-# # 토지 거래 데이터 리스트를 문자열 리스트로 변환 함수
-# def return_land_trade_string(data: list[dict]) -> list[dict]:
-#     result_strings: list[str] = []
-#     for record in data:
-#         record_str = (
-#             f"지역코드: {str(record.get('sggCd',''))}\n"
-#             f"시군구: {str(record.get('sggNm',''))}\n"
-#             f"법정동명: {str(record.get('umdNm',''))}\n"
-#             f"지번: {str(record.get('jibun',''))}\n"
-#             f"지목: {str(record.get('jimok',''))}\n"
-#             f"용도지역: {str(record.get('landUse',''))}\n"
-#             f"계약년도: {str(record.get('dealYear',''))}\n"
-#             f"계약월: {str(record.get('dealMonth',''))}\n"
-#             f"계약일: {str(record.get('dealDay',''))}\n"
-#             f"거래면적(㎡): {str(record.get('dealArea',''))}\n"
-#             f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
-#             f"지분거래구분: {str(record.get('shareDealingType',''))}\n"
-#             f"해제여부: {str(record.get('cdealType',''))}\n"
-#             f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
-#             f"거래유형: {str(record.get('dealingGbn',''))}\n"
-#             f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
-#         )
-
-#         # 문장화 
-#         # ex 2025년 12월 3일, '중개사 소재지: 경기 광주시 법정동 초월읍 쌍동리' (지번: 395)에 위치한 '초월역모아미래도파크힐스' 아파트 103동동 8층 매물이 거래금액 4억 6000만원에 중개거래되었습니다. 이 단지는 2020년에 준공되었으며, 전용면적은 84.9191㎡입니다.
-#         record_str = (
-#             f"{str(record.get('dealYear',''))}년 "
-#             f"{str(record.get('dealMonth',''))}월 "
-#             f"{str(record.get('dealDay',''))}일 "
-#             f"{str(record.get('sggNm',''))} "
-#             f"{str(record.get('umdNm',''))} "
-#             f"{str(record.get('jibun',''))}번지 "
-#             f"토지(지목: {str(record.get('jimok',''))}, "
-#             f"용도지역: {str(record.get('landUse',''))}) "
-#             f"거래면적 {str(record.get('dealArea',''))}㎡, "
-#             f"거래금액 {str(record.get('dealAmount','')).replace(',', '')}만원, "
-#             f"지분거래구분: {str(record.get('shareDealingType',''))}, "
-#             f"해제여부: {str(record.get('cdealType',''))}, "
-#             f"거래유형: {str(record.get('dealingGbn',''))}, "
-#             f"중개사소재지: {str(record.get('estateAgentSggNm',''))}"
-#         )
-
-#         last_data = {
-#             "metadata": {
-#                 "region_code": record.get('sggCd',''),
-#                 "enactment_date": f"{str(record.get('dealYear',''))}{str(record.get('dealMonth','')).zfill(2)}{str(record.get('dealDay','')).zfill(2)}"
-#             },
-#             "content": record_str
-#         }
-
-#         result_strings.append(last_data)
-
-#     return result_strings
-
 # 토지 거래 데이터 리스트를 문자열 리스트로 변환 함수 (RAG 최적화 적용)
 def return_land_trade_string(data: list[dict]) -> list[dict]:
     result_strings: list[dict] = []
@@ -291,7 +237,7 @@ def save_land_trade_data_to_txt() -> None:
         print(f"=== {ym} 기간에 조회된 전원세 데이터가 전혀 없습니다. ===")
         return
     
-    text_strings: list[str] = return_land_trade_string(total_data)
+    text_strings: list[dict] = return_land_trade_string(total_data)
 
     # ######################중복 로직 추가 
     previous_hashes = set()
@@ -312,6 +258,11 @@ def save_land_trade_data_to_txt() -> None:
             filtered_list.append(record)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
 ############# 중복 로직 끝 ######################
+
+    if len(filtered_list) == 0:
+        print("=== 신규 데이터가 0건이므로 파일 저장을 수행하지 않습니다. ===")
+        return
+    
     # 파일 저장
     filedate = f"{year}{month:02d}{day:02d}"
     filename = f"txts/land_real_estate/land_data_{filedate}.txt"
