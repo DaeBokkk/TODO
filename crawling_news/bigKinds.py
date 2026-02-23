@@ -35,30 +35,54 @@ def init_driver() -> webdriver.Chrome:
 
 
 # 메인 페이지 팝업창 2개 처리 함수
-def popup_handling(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
-    # try:
-    #     popup1_close_xpath = '//*[@id="popup-dialog-127"]/div/div[2]/div/div[2]/button'
-    #     close_button1 = wait.until(EC.element_to_be_clickable((By.XPATH, popup1_close_xpath)))
-    #     close_button1.click()
-    #     print("첫 번째 팝업을 닫았습니다.")
-    # except Exception as e:
-    #     print(f"첫 번째 팝업 닫기 실패: {e}")
-    # try:
-    #     popup2_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
-    #     close_button2 = wait.until(EC.element_to_be_clickable((By.XPATH, popup2_close_xpath)))
-    #     close_button2.click()
-    #     print("두 번째 팝업을 닫았습니다.")
-    # except Exception as e:
-    #     print(f"두 번째 팝업 닫기 실패: {e}")
+# def popup_handling(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
+#     # try:
+#     #     popup1_close_xpath = '//*[@id="popup-dialog-127"]/div/div[2]/div/div[2]/button'
+#     #     close_button1 = wait.until(EC.element_to_be_clickable((By.XPATH, popup1_close_xpath)))
+#     #     close_button1.click()
+#     #     print("첫 번째 팝업을 닫았습니다.")
+#     # except Exception as e:
+#     #     print(f"첫 번째 팝업 닫기 실패: {e}")
+#     # try:
+#     #     popup2_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
+#     #     close_button2 = wait.until(EC.element_to_be_clickable((By.XPATH, popup2_close_xpath)))
+#     #     close_button2.click()
+#     #     print("두 번째 팝업을 닫았습니다.")
+#     # except Exception as e:
+#     #     print(f"두 번째 팝업 닫기 실패: {e}")
     
-    try:
-        # //*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button
-        popup3_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
-        close_button3 = wait.until(EC.element_to_be_clickable((By.XPATH, popup3_close_xpath)))
-        close_button3.click()
-        print("팝업을 닫았습니다.")
-    except Exception as e:
-        print(f"팝업 닫기 실패: {e}")
+#     # try:
+#     #     # //*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button
+#     #     popup3_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
+#     #     close_button3 = wait.until(EC.element_to_be_clickable((By.XPATH, popup3_close_xpath)))
+#     #     close_button3.click()
+#     #     print("팝업을 닫았습니다.")
+#     # except Exception as e:
+#     #     print(f"팝업 닫기 실패: {e}")
+    
+#     try:
+#         # //*[@id="popup-dialog-127"]/div/div[2]/div/div[2]/button
+#         popup4_close_xpath = '//*[@id="popup-dialog-135"]/div/div[2]/div/div[2]/button'
+#         close_button4 = wait.until(EC.element_to_be_clickable((By.XPATH, popup4_close_xpath)))
+#         close_button4.click()
+#         print("팝업을 닫았습니다.")
+#     except Exception as e:
+#         print(f"팝업 닫기 실패: {e}")
+
+def popup_handling(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
+    while True:
+        try:
+            btn = wait.until(EC.element_to_be_clickable(
+                (By.XPATH, "//*[starts-with(@id, 'popup-dialog-')]/div/div[2]/div/div[2]/button")
+            ))
+            btn.click()
+            print("팝업을 닫았습니다.")
+            time.sleep(0.1)  # 다음 팝업 뜨는 시간 약간 기다리기
+        except:
+            break
+
+    print("모든 팝업 처리가 끝났습니다.")
+
 
 # 검색 키워드 입력 및 필터 설정
 def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
@@ -77,54 +101,21 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     print("검색 버튼을 클릭했습니다.")
     # //*[@id="search-begin-date"] 클릭해서 안에 내용 지우고 오늘날짜 2025-11-16 입력
     search_begin_date = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="search-begin-date"]')))
-
     search_end_date = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="search-end-date"]')))
 
-    # 맥일때 내용 지우기
+    action = webdriver.ActionChains(driver)
 
-    if platform.system() == "Darwin":
-        try:
-            search_begin_date.send_keys(Keys.COMMAND + "A")  # 키보드 명령어 컨트롤 조합 명령어 맥일때 한글도 포함 
-            search_begin_date.send_keys(Keys.DELETE)
-            search_begin_date.send_keys(today) # 시작 날짜 입력
-            search_begin_date.send_keys(Keys.ENTER)
-            print(f"오늘날짜 {today} 입력했습니다.")
+    action.click(search_begin_date).pause(0.02).click(search_begin_date).pause(0.02).click(search_begin_date).perform()
+    search_begin_date.send_keys(Keys.DELETE)
+    search_begin_date.send_keys(today) # 시작 날짜 입력
+    search_begin_date.send_keys(Keys.ENTER)
+    print(f"오늘날짜 {today} 입력했습니다.")
 
-            search_end_date.send_keys(Keys.COMMAND + "A")  # 키보드 명령어 컨트롤 조합 명령어 맥일때 한글도 포함
-            search_end_date.send_keys(Keys.DELETE)
-            search_end_date.send_keys(today)
-            search_end_date.send_keys(Keys.ENTER)
-        except Exception as e:
-            print(f"오류: {e}")
-
-    # 키보드 명령어 컨트롤 조합 명령어 윈도우일때 
-    if platform.system() == "Windows":
-        try:
-            search_begin_date.send_keys(Keys.CONTROL + "A")
-            search_begin_date.send_keys(Keys.DELETE)
-            search_begin_date.send_keys(today)
-            search_begin_date.send_keys(Keys.ENTER)
-            print(f"오늘날짜 {today} 입력했습니다.")
-
-            search_end_date.send_keys(Keys.CONTROL + "A")
-            search_end_date.send_keys(Keys.DELETE)
-            search_end_date.send_keys(today)
-            search_end_date.send_keys(Keys.ENTER)
-        except Exception as e:
-            print(f"오류: {e}")
-    
-    # 리눅스 
-    if platform.system() == "Linux": 
-        search_begin_date.send_keys(Keys.CONTROL + "A")  # 키보드 명령어 컨트롤 조합 명령어 
-        search_begin_date.send_keys(Keys.DELETE)  # 내용 지우기 버튼 클릭
-        search_begin_date.send_keys(today)
-        search_begin_date.send_keys(Keys.ENTER)
-
-        search_end_date.send_keys(Keys.CONTROL + "A")  # 키보드 명령어 컨트롤 조합 명령어 
-        search_end_date.send_keys(Keys.DELETE)
-        search_end_date.send_keys(today)
-        search_end_date.send_keys(Keys.ENTER)
-    # 내용 지우기 버튼 클릭
+    action.click(search_end_date).pause(0.02).click(search_end_date).pause(0.02).click(search_end_date).perform()
+    search_end_date.send_keys(Keys.DELETE)
+    search_end_date.send_keys(today)
+    search_end_date.send_keys(Keys.ENTER)
+    # 뉴스 검색 기간 설정 끝
 
     ############################################# 언론사 선택 ##############################################################
     # //*[@id="ds-modal"]/div[3]/div/div[2]/ul/li[3]/a xpath 클릭
