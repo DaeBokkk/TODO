@@ -456,7 +456,7 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
                 pass
 
             if prev_contract_str:
-                text_chunk += f" {prev_contract_str}."
+                text_chunk += f" {prev_contract_str}"
             # 공백 정리 (더블 스페이스 제거)
             text_chunk = " ".join(text_chunk.split())
 
