@@ -10,8 +10,6 @@ import time
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
 from langchain_core.documents import Document
-import platform
-import schedule
 import re
 import json
 
@@ -33,42 +31,6 @@ def init_driver() -> webdriver.Chrome:
     driver.get(url)
     return driver
 
-
-# 메인 페이지 팝업창 2개 처리 함수
-# def popup_handling(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
-#     # try:
-#     #     popup1_close_xpath = '//*[@id="popup-dialog-127"]/div/div[2]/div/div[2]/button'
-#     #     close_button1 = wait.until(EC.element_to_be_clickable((By.XPATH, popup1_close_xpath)))
-#     #     close_button1.click()
-#     #     print("첫 번째 팝업을 닫았습니다.")
-#     # except Exception as e:
-#     #     print(f"첫 번째 팝업 닫기 실패: {e}")
-#     # try:
-#     #     popup2_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
-#     #     close_button2 = wait.until(EC.element_to_be_clickable((By.XPATH, popup2_close_xpath)))
-#     #     close_button2.click()
-#     #     print("두 번째 팝업을 닫았습니다.")
-#     # except Exception as e:
-#     #     print(f"두 번째 팝업 닫기 실패: {e}")
-    
-#     # try:
-#     #     # //*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button
-#     #     popup3_close_xpath = '//*[@id="popup-dialog-128"]/div/div[2]/div/div[2]/button'
-#     #     close_button3 = wait.until(EC.element_to_be_clickable((By.XPATH, popup3_close_xpath)))
-#     #     close_button3.click()
-#     #     print("팝업을 닫았습니다.")
-#     # except Exception as e:
-#     #     print(f"팝업 닫기 실패: {e}")
-    
-#     try:
-#         # //*[@id="popup-dialog-127"]/div/div[2]/div/div[2]/button
-#         popup4_close_xpath = '//*[@id="popup-dialog-135"]/div/div[2]/div/div[2]/button'
-#         close_button4 = wait.until(EC.element_to_be_clickable((By.XPATH, popup4_close_xpath)))
-#         close_button4.click()
-#         print("팝업을 닫았습니다.")
-#     except Exception as e:
-#         print(f"팝업 닫기 실패: {e}")
-
 def popup_handling(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     while True:
         try:
@@ -83,6 +45,17 @@ def popup_handling(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
 
     print("모든 팝업 처리가 끝났습니다.")
 
+# 날짜 입력 필드 저격 함수 
+def select_and_fill(driver, element, text):
+    # 포커스 + 전체선택 + 값 삭제
+    driver.execute_script("""
+        arguments[0].focus();
+        arguments[0].select();
+        arguments[0].value = "";
+    """, element)
+
+    element.send_keys(text)
+    element.send_keys(Keys.ENTER)
 
 # 검색 키워드 입력 및 필터 설정
 def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
@@ -103,19 +76,11 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     search_begin_date = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="search-begin-date"]')))
     search_end_date = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="search-end-date"]')))
 
-    action = webdriver.ActionChains(driver)
-
-    action.click(search_begin_date).pause(0.02).click(search_begin_date).pause(0.02).click(search_begin_date).perform()
-    search_begin_date.send_keys(Keys.DELETE)
-    search_begin_date.send_keys(today) # 시작 날짜 입력
-    search_begin_date.send_keys(Keys.ENTER)
+    select_and_fill(driver, search_begin_date, today)
     print(f"오늘날짜 {today} 입력했습니다.")
 
-    action.click(search_end_date).pause(0.02).click(search_end_date).pause(0.02).click(search_end_date).perform()
-    search_end_date.send_keys(Keys.DELETE)
-    search_end_date.send_keys(today)
-    search_end_date.send_keys(Keys.ENTER)
-    # 뉴스 검색 기간 설정 끝
+    select_and_fill(driver, search_end_date, today)
+    print(f"오늘날짜 {today} 입력했습니다.")
 
     ############################################# 언론사 선택 ##############################################################
     # //*[@id="ds-modal"]/div[3]/div/div[2]/ul/li[3]/a xpath 클릭
@@ -135,8 +100,6 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     driver.find_element(By.XPATH, '//*[@id="srch-tab2"]/div[1]/div/p').click()    
     
     # #### 지역주간지  수정 로직 ##############################################################
-    # //*[@id="categoryProviderList"]/div[74]/label 클릭
-    # //*[@id="categoryProviderGroup"]/li[4]/label/div
     search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="categoryProviderGroup"]/li[4]/label/div')))
     search_button.click()
     print("지역주간지 경기를 선택 버튼을 클릭했습니다.")
@@ -409,23 +372,6 @@ def main():
     save_as_txt_with_metadata(html_text)
     driver.quit()
 
-# 스케줄러 설정
-TARGET_TIME = "23:58"  # 매일 실행할 시간
-schedule.every().day.at(TARGET_TIME).do(main) # do 안에 실행할 함수 넣기
 
 if __name__ == "__main__":
-
-    # 방법 1: langchain용 문서로 주기 (scheduler를 함수를 받은 모듈쪽에서 처리해줘야함)
-    # document = get_news_documents()
-    # for doc in document:
-    #     print(f"Title: {doc.metadata['title']}")
-    #     print(f"Content: {doc.page_content}") 
-    #     print("-" * 50)
-    main()
-    # 방법 2: txt 파일로 주기 (독단적으로 이 스크립트가 항시 실행중이어야함)
-
-    # 스케줄러 무한 루프 실행 (txt 파일로 저장하는 방식) 파일 이름 구조 : bitkinds_news_20251116.txt, bitkinds_news_20251117.txt 2025년 11월 16일, 17일
-    # # 이 방법일시 독단적으로 이 스크립트가 항시 실행중이어야함 파일을 주기적으로 생성해줌
-    # while True:
-    #     schedule.run_pending()
-    #     time.sleep(60)  # 1분마다 스케줄 확인    
+    main()   
