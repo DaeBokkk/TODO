@@ -1,11 +1,7 @@
 # 아파트 매매, 전월세 실거래가 데이터 수집 
 
-from langchain_core.documents import Document
 from dataPortal.apt_list import apt_sub
 import datetime #  main에서 날짜 설정을 위해 임포트
-import pandas as pd
-import schedule
-import time
 import json
 import os
 import glob

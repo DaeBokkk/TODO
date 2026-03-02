@@ -3,7 +3,6 @@
 import requests
 import xmltodict
 import os
-import sys
 import dotenv
 import datetime
 from dataPortal import region

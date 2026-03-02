@@ -3,13 +3,10 @@
 import requests
 import xmltodict
 import os
-import sys
 import dotenv
 import datetime
 from dataPortal import region
 import json
-import schedule
-import time
 import glob
 # 초기화
 dotenv.load_dotenv()
