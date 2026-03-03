@@ -202,9 +202,16 @@ def save_officetel_trade_data_to_txt() -> None:
     month = now.month
     day = now.day
     ym = f"{year}{month:02d}"
+    prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
+
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
 
-    officetel_data = get_all_officetel_trade_data(ym)
+    officetel_data = get_all_officetel_trade_data(ym) + get_all_officetel_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    
+    if not officetel_data:
+        print("=== 이번달과 지난달 오피스텔 매매 거래 데이터가 모두 0건입니다. 파일 저장을 수행하지 않습니다. ===")
+        return
+
     officetel_strings = return_officetel_string(officetel_data)
 
     # 중복 로직 시작
@@ -212,11 +219,11 @@ def save_officetel_trade_data_to_txt() -> None:
     folder_path = "txts/officetel_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    for file in glob.glob(os.path.join(folder_path, f"officetel_data_{ym}*.txt")): 
+    for file in glob.glob(os.path.join(folder_path, f"officetel_data_{ym}*.txt")) + glob.glob(os.path.join(folder_path, f"officetel_data_{prev_ym}*.txt")): 
         file_hashes = load_previous_hashes(file)
         previous_hashes.update(file_hashes)
 
-    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
     # 중복 제거 후 최종 저장할 데이터 리스트
     filtered_list: list[dict] = []  
 
@@ -464,9 +471,16 @@ def save_officetel_rent_data_to_txt() -> None:
     month = now.month
     day = now.day
     ym = f"{year}{month:02d}"
+    prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
+
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
 
-    officetel_rent_data = get_all_officetel_rent_data(ym)
+    officetel_rent_data = get_all_officetel_rent_data(ym) + get_all_officetel_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    
+    if not officetel_rent_data:
+        print("=== 이번달과 지난달 오피스텔 전월세 거래 데이터가 모두 0건입니다. 파일 저장을 수행하지 않습니다. ===")
+        return
+
     officetel_rent_strings = return_officetel_rent_string(officetel_rent_data)
 
     # 중복 로직 시작
@@ -474,11 +488,11 @@ def save_officetel_rent_data_to_txt() -> None:
     folder_path = "txts/officetel_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    for file in glob.glob(os.path.join(folder_path, f"officetel_rent_data_{ym}*.txt")): 
+    for file in glob.glob(os.path.join(folder_path, f"officetel_rent_data_{ym}*.txt")) + glob.glob(os.path.join(folder_path, f"officetel_rent_data_{prev_ym}*.txt")): 
         file_hashes = load_previous_hashes(file)
         previous_hashes.update(file_hashes)
 
-    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
     # 중복 제거 후 최종 저장할 데이터 리스트
     filtered_list: list[dict] = []
 

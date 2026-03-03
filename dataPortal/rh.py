@@ -251,9 +251,15 @@ def save_rh_trade_data_to_txt() -> None:
     month = now.month
     day = now.day
     ym = f"{year}{month:02d}"
+    prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
+    
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     # 데이터 수집
-    all_rh_data = get_all_rh_trade_data(ym=ym)
+    all_rh_data = get_all_rh_trade_data(ym=ym) + get_all_rh_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+
+    if not all_rh_data:
+        print("=== 수집된 데이터가 없습니다. 파일 저장을 수행하지 않습니다. ===")
+        return
 
     # 문자열 리스트로 변환
     rh_strings = return_rh_trade_string(all_rh_data)
@@ -263,11 +269,11 @@ def save_rh_trade_data_to_txt() -> None:
     folder_path = "txts/rh_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    for file in glob.glob(os.path.join(folder_path, f"rh_data_{ym}*.txt")): 
+    for file in glob.glob(os.path.join(folder_path, f"rh_data_{ym}*.txt")) + glob.glob(os.path.join(folder_path, f"rh_data_{prev_ym}*.txt")): 
         file_hashes = load_previous_hashes(file)
         previous_hashes.update(file_hashes)
 
-    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
 
     filtered_list: list[dict] = []
 
@@ -534,9 +540,15 @@ def save_rh_rent_data_to_txt() -> None:
     month = now.month
     day = now.day
     ym = f"{year}{month:02d}"
+    prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
+
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     # 데이터 수집
-    all_rh_rent_data = get_all_rh_rent_data(ym=ym)
+    all_rh_rent_data = get_all_rh_rent_data(ym=ym) + get_all_rh_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+
+    if not all_rh_rent_data:
+        print("=== 수집된 데이터가 없습니다. 파일 저장을 수행하지 않습니다. ===")
+        return
 
     # 문자열 리스트로 변환
     rh_rent_strings = return_rh_rent_string(all_rh_rent_data)
@@ -549,11 +561,11 @@ def save_rh_rent_data_to_txt() -> None:
     folder_path = "txts/rh_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    for file in glob.glob(os.path.join(folder_path, f"rh_rent_data_{ym}*.txt")): 
+    for file in glob.glob(os.path.join(folder_path, f"rh_rent_data_{ym}*.txt")) + glob.glob(os.path.join(folder_path, f"rh_rent_data_{prev_ym}*.txt")):  # 이번달과 지난달 파일 패턴과 일치하는 기존 파일들에서 해시 로드
         file_hashes = load_previous_hashes(file)
         previous_hashes.update(file_hashes)
 
-    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")  
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")  
     
     filtered_list: list[dict] = []
 

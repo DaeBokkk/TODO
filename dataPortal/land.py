@@ -226,12 +226,14 @@ def save_land_trade_data_to_txt() -> None:
     month = now.month
     day = now.day
     ym = f"{year}{month:02d}"
+    prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
+    
     # 전체 토지 데이터 조회
-    total_data : list[dict] = get_all_land_trade_data(ym)
+    total_data : list[dict] = get_all_land_trade_data(ym) + get_all_land_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
 
     # 데이터가 없으면 종료
     if not total_data:
-        print(f"=== {ym} 기간에 조회된 전원세 데이터가 전혀 없습니다. ===")
+        print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 전원세 데이터가 전혀 없습니다. ===")
         return
     
     text_strings: list[dict] = return_land_trade_string(total_data)
@@ -241,11 +243,11 @@ def save_land_trade_data_to_txt() -> None:
     folder_path = "txts/land_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    for file in glob.glob(os.path.join(folder_path, f"land_data_{ym}*.txt")): 
+    for file in glob.glob(os.path.join(folder_path, f"land_data_{ym}*.txt")) + glob.glob(os.path.join(folder_path, f"land_data_{prev_ym}*.txt")):  # 이번달과 지난달 파일 패턴과 일치하는 기존 파일들에서 해시 로드
         file_hashes = load_previous_hashes(file)
         previous_hashes.update(file_hashes)
 
-    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
     # 중복 제거
     filtered_list: list[dict] = []
     for record in text_strings:

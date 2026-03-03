@@ -5,6 +5,7 @@ import datetime #  main에서 날짜 설정을 위해 임포트
 import json
 import os
 import glob
+import pandas as pd
 
 # 아파트 매매 실거래가 txt 파일로 저장하는 함수 구현
 def save_apt_data_to_txt() -> None:
@@ -14,9 +15,14 @@ def save_apt_data_to_txt() -> None:
     month = now.month
     day = now.day
     ym = f"{year}{month:02d}"
-    total_df = apt_sub.get_all_apt_trade_data(ym)
+    prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
+
+    df1 = apt_sub.get_all_apt_trade_data(ym)
+    df2 = apt_sub.get_all_apt_trade_data(prev_ym)
+
+    total_df = pd.concat([df1, df2], ignore_index=True)
     if total_df.empty:
-        print(f"=== {ym} 기간에 조회된 실거래가 데이터가 전혀 없습니다. ===")
+        print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 실거래가 데이터가 전혀 없습니다. ===")
         return
     
     text_strings: list[dict] = apt_sub.return_apt_string(total_df)
@@ -26,11 +32,11 @@ def save_apt_data_to_txt() -> None:
     folder_path = "txts/apt_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    for file in glob.glob(os.path.join(folder_path, f"apt_data_{ym}*.txt")): # 경로는 
+    for file in glob.glob(os.path.join(folder_path, f"apt_data_{ym}*.txt")) + glob.glob(os.path.join(folder_path, f"apt_data_{prev_ym}*.txt")):  # 이번달과 지난달 파일 패턴과 일치하는 기존 파일들에서 해시 로드
         file_hashes = load_previous_hashes(file)
         previous_hashes.update(file_hashes)
 
-    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
     filtered_list: list[dict] = []
     for rent in text_strings:
         content = rent.get("content", "")
@@ -59,8 +65,14 @@ def save_apt_rent_data_to_txt():
     year = now.year
     month = now.month
     ym = f"{year}{month:02d}"
+    prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
     date = f"{year}{month:02d}{now.day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
-    rent_data = apt_sub.get_all_apt_rent_data(ym)
+    rent_data = apt_sub.get_all_apt_rent_data(ym) + apt_sub.get_all_apt_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+
+    if not rent_data:
+        print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 전월세 데이터가 전혀 없습니다. ===")
+        return
+    
     rent_strings = apt_sub.return_apt_rent_string(rent_data)
 
     # 중복 로직 추가 
@@ -68,17 +80,17 @@ def save_apt_rent_data_to_txt():
     folder_path = "txts/apt_real_estate"
     os.makedirs(folder_path, exist_ok=True)  # 폴더가 없으면 생성
 
-    for file in glob.glob(os.path.join(folder_path, f"apt_rent_data_{ym}*.txt")): 
+    for file in glob.glob(os.path.join(folder_path, f"apt_rent_data_{ym}*.txt")) + glob.glob(os.path.join(folder_path, f"apt_rent_data_{prev_ym}*.txt")):  # 이번달과 지난달 파일 패턴과 일치하는 기존 파일들에서 해시 로드
         file_hashes = load_previous_hashes(file)
         previous_hashes.update(file_hashes)
 
-    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 중복 해시 로드 완료 ===")
+    print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
     
     filtered_list: list[dict] = []
     for rent in rent_strings:
-        content = rent.get("content", "")
-        content_hash = md5_hash(content)
-        if content_hash not in previous_hashes:
+        content = rent.get("content", "") # content 필드에서 문자열 추출
+        content_hash = md5_hash(content) # 문자열의 MD5 해시값 계산
+        if content_hash not in previous_hashes: # 이전 해시와 비교하여 중복 여부 판단
             filtered_list.append(rent)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     ############# 중복 로직 끝 ######################
@@ -140,4 +152,4 @@ if __name__ == "__main__":
 
     # 방법 2 : Document 텍스트 파일로 저장 스케줄링
     save_apt_data_to_txt()
-    save_apt_rent_data_to_txt()
+    # save_apt_rent_data_to_txt()
