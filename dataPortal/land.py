@@ -110,9 +110,9 @@ def return_land_trade_string(data: list[dict]) -> list[dict]:
                 elif amt_int >= 10000:
                     eok = amt_int // 10000
                     man = amt_int % 10000
-                    price_str = f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
+                    price_str = f"{eok}억원" if man == 0 else f"{eok}억 {man}만원"
                 else:
-                    price_str = f"{amt_int:,}만원"
+                    price_str = f"{amt_int}만원"
             except:
                 price_str = "가격정보없음"
 

@@ -137,7 +137,7 @@ def return_apt_string(df: pd.DataFrame) -> list[dict]:
                 result.append(f"{man:,}천" if man % 1000 == 0 and man != 0 else f"{man:,}") 
             
             if man > 0:
-                return f"{eok}억 {man:}만원" if eok > 0 else f"{man:}만원"
+                return f"{eok}억 {man}만원" if eok > 0 else f"{man}만원"
             else:
                 return f"{eok}억원"
         except:
@@ -344,8 +344,8 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
                     if val >= 10000:
                         eok = val // 10000
                         man = val % 10000
-                        return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
-                    return f"{val:,}만원"
+                        return f"{eok}억원" if man == 0 else f"{eok}억 {man:}만원"
+                    return f"{val}만원"
                 except:
                     return "0원"
 

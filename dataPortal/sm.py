@@ -90,40 +90,20 @@ def return_sm_trade_string(data: list[dict]) -> list[dict]:
             try:
                 # 쉼표 제거 및 공백 제거
                 clean_str = str(val_str).replace(',', '').strip()
-                if not clean_str: return "0"
+                if not clean_str: return "0원"
                     
                 val = int(clean_str)
-                if val == 0: return "0"
+                if val == 0: return "0원"
                     
                 if val >= 10000:
                     eok = val // 10000
                     man = val % 10000
-                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
-                return f"{val:,}만원"
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man}만원"
+                return f"{val}만원"
             except:
                 return "0원"
 
     for record in data:
-        # record_str = (
-        #     f"지역코드: {record.get('sggCd','')}\n"
-        #     f"지역명: {record.get('umdNm','')}\n"
-        #     f"주택유형(단독/다가구): {record.get('houseType','')}\n"
-        #     f"지번: {record.get('jibun','')}\n"
-        #     f"연면적(㎡): {record.get('totalFloorAr','')}\n"
-        #     f"대지면적(㎡): {record.get('plottageAr','')}\n"
-        #     f"계약년: {record.get('dealYear','')}\n"
-        #     f"계약월: {record.get('dealMonth','')}\n"
-        #     f"계약일: {record.get('dealDay','')}\n"
-        #     f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
-        #     f"건축년도: {record.get('buildYear','')}\n"
-        #     f"해제여부: {record.get('cdealType','')}\n"
-        #     f"해제사유발생일: {record.get('cdealDay','')}\n"
-        #     f"거래유형(중개 및 직거래 여부): {record.get('dealingGbn','')}\n"
-        #     f"중개사소재지(시군구 단위): {record.get('estateAgentSggNm','')}\n"
-        #     f"거래주체정보_매도자(개인/법인/공공기관/기타): {record.get('slerGbn','')}\n"
-        #     f"거래주체정보_매수자(개인/법인/공공기관/기타): {record.get('buyerGbn','')}\n"
-        # )
-
         year = get_val('dealYear', '')
         month = get_val('dealMonth', '').zfill(2)
         day = get_val('dealDay', '').zfill(2)
@@ -317,38 +297,20 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
             try:
                 # 쉼표 제거 및 공백 제거
                 clean_str = str(val_str).replace(',', '').strip()
-                if not clean_str: return "0"
+                if not clean_str: return "0원"
                     
                 val = int(clean_str)
-                if val == 0: return "0"
+                if val == 0: return "0원"
                     
                 if val >= 10000:
                     eok = val // 10000
                     man = val % 10000
-                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
-                return f"{val:,}만원"
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man}만원"
+                return f"{val}만원"
             except:
                 return "0원"
 
     for record in data:
-        # record_str = (
-        #     f"지역코드: {record.get('sggCd','')}\n"
-        #     f"지역명: {record.get('umdNm','')}\n"
-        #     f"주택유형(단독/다가구): {record.get('houseType','')}\n"
-        #     f"연면적(㎡): {record.get('totalFloorAr','')}\n"
-        #     f"계약년: {record.get('dealYear','')}\n"
-        #     f"계약월: {record.get('dealMonth','')}\n"
-        #     f"계약일: {record.get('dealDay','')}\n"
-        #     f"보증금액(만원): {str(record.get('deposit','')).replace(',', '')}\n"
-        #     f"월세금액(만원): {str(record.get('monthlyRent','')).replace(',', '')}\n"
-        #     f"건축년도: {record.get('buildYear','')}\n"
-        #     f"계약기간: {record.get('contractTerm','')}\n"
-        #     f"계약구분: {record.get('contractType','')}\n"
-        #     f"갱신요구권사용: {record.get('useRRRight','')}\n"
-        #     f"종전계약보증금(만원): {str(record.get('preDeposit','')).replace(',', '')}\n"
-        #     f"종전계약월세(만원): {str(record.get('preMonthlyRent','')).replace(',', '')}\n"
-        # )
-
         year = get_val('dealYear','')
         month = get_val('dealMonth','').zfill(2)
         day = get_val('dealDay','').zfill(2)
@@ -415,16 +377,6 @@ def return_sm_rent_string(data: list[dict]) -> list[dict]:
             f"건축년도는 {build_year}년이며, 연면적은 {area_text}입니다. "
             f"갱신요구권은 {'사용' if use_rr == '사용' else '미사용'} 상태입니다. "
             f"계약기간은 {term}입니다."
-            # f"거래일자: {deal_date
-            # f"법정동: {dong} | "
-            # f"주택유형: {house_type} | "
-            # f"건축년도: {build_year}년 | "
-            # f"연면적: {area_text} | "
-            # f"거래유형: {deal_type} | "
-            # f"거래금액: {price_text} | "
-            # f"갱신요구권: {'사용' if use_rr == '사용' else '미사용'} | "
-            # f"계약구분: {contract_type or '정보없음'} | "
-            # f"계약기간: {term}"
         )
             
         if contract_type == "갱신":
@@ -466,7 +418,7 @@ def save_sm_rent_data_to_txt() -> None:
     ym = f"{year}{month:02d}"
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
 
-    total_df: list[dict] = get_all_sm_trade_data(ym) + get_all_sm_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    total_df: list[dict] = get_all_sm_rent_data(ym=ym) + get_all_sm_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
     
     if not total_df:
         print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 단독/다가구 전월세 실거래가 데이터가 전혀 없습니다. ===")

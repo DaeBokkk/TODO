@@ -96,8 +96,8 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
                 if val >= 10000:
                     eok = val // 10000
                     man = val % 10000
-                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"                    
-                return f"{val:,}만원"
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:}만원"                    
+                return f"{val}만원"
             except:
                 return "0원"
         
@@ -332,8 +332,8 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
                 if val >= 10000:
                     eok = val // 10000
                     man = val % 10000
-                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
-                return f"{val:,}만원"
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:}만원"
+                return f"{val}만원"
             except:
                 return "0원"
             

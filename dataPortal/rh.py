@@ -99,8 +99,8 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
                 if val >= 10000:
                     eok = val // 10000
                     man = val % 10000
-                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
-                return f"{val:,}만원"
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man}만원"
+                return f"{val}만원"
             except:
                 return "0원"
 
@@ -384,38 +384,17 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
                 if not clean_str: return "0" 
                     
                 val = int(clean_str)
-                if val == 0: return "0"
+                if val == 0: return "0원"
                     
                 if val >= 10000:
                     eok = val // 10000
                     man = val % 10000
-                    return f"{eok}억원" if man == 0 else f"{eok}억 {man:,}만원"
-                return f"{val:,}만원"
+                    return f"{eok}억원" if man == 0 else f"{eok}억 {man}만원"
+                return f"{val}만원"
             except:
                 return "0원"
 
     for record in data:
-
-        # record_str = (
-        #     f"지역코드: {str(record.get('sggCd',''))}\n"
-        #     f"법정동명: {str(record.get('umdNm',''))}\n"
-        #     f"연립다세대명: {str(record.get('mhouseNm', ''))}\n"
-        #     f"지번: {str(record.get('jibun', ''))}\n"
-        #     f"건축년도: {str(record.get('buildYear', ''))}\n"
-        #     f"전용면적(㎡): {str(record.get('excluUseAr',''))}\n"
-        #     f"계약년도: {str(record.get('dealYear',''))}\n"
-        #     f"계약월: {str(record.get('dealMonth',''))}\n"
-        #     f"계약일: {str(record.get('dealDay',''))}\n"
-        #     f"보증금액(만원): {str(record.get('deposit','')).replace(',', '')}\n"
-        #     f"월세금액(만원): {str(record.get('monthlyRent','')).replace(',', '')}\n"
-        #     f"층: {str(record.get('floor', ''))}\n"
-        #     f"계약기간: {str(record.get('contractTerm',''))}\n"
-        #     f"계약구분: {str(record.get('contractType',''))}\n"
-        #     f"갱신요구권사용: {str(record.get('useRRRight',''))}\n"
-        #     f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
-        #     f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
-        # )
-
         year = get_val('dealYear')
         month = get_val('dealMonth').zfill(2)
         day = get_val('dealDay').zfill(2)
@@ -501,18 +480,7 @@ def return_rh_rent_string(data: list[dict]) -> list[dict]:
             f"계약기간은 {term}입니다. "
             f"갱신요구권 사용여부는 {use_rr}입니다."
         )
-            # f"법정동명: {dong} | "
-            # f"도로명주소 : {dong} {jibun} | "
-            # f"연립다세대명: {mhouse_name} | "
-            # f"전용면적: {area_text} | "
-            # f"층수: {floor_str} | " 
-            # f"거래유형: {deal_type} | "
-            # f"가격: {price_text} | "
-            # f"건축년도: {build_year}년 | "
-            # f"계약기간: {term} | "
-            # f"계약구분: {contract_type or '정보없음'} | "
-            # f"갱신요구권사용여부: {use_rr}"    
-
+           
         if preMonthlyRent != '0': # 종전계약월세가 있으면 월세
             record_str += f" 종전계약 정보는 보증금 {preDeposit}, 월세 {preMonthlyRent}입니다."
         elif preDeposit != '0': # 종전계약보증금이 있으면 전세
