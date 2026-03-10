@@ -69,15 +69,16 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
     total_regions = len(region_dict)
 
     for i, (region_name, lawd_cd) in enumerate(region_dict.items()):
-        
-        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 데이터 수집 중...")
-        
-        rent_data = land_trade(lawd_cd, ym) 
-        
-        if rent_data:
-            all_land_data.extend(rent_data)
-        else:
-            print(f"    -> {region_name} 지역은 법정동코드({lawd_cd}), {ym}월 매매 거래 내역이 없습니다.")
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 토지 매매 데이터 수집 중...")
+        for attempt in range(3):  # 최대 3회 재시도
+            try:
+                land_data = land_trade(lawd_cd, ym)
+                all_land_data.extend(land_data)
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
+                if attempt == 2:  # 마지막 시도에서도 실패한 경우
+                    print(f"    -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
 
     print(f"\n=== 모든 지역 데이터 병합 완료. {ym} 경기도 총 토지 매매 데이터: {len(all_land_data)}건 ===")
     

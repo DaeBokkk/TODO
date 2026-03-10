@@ -66,14 +66,18 @@ def get_all_officetel_trade_data(ym: str) -> list[dict]:
     all_officetel_data = []
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     sgg_dict = region.get_all_sgg_code_dict()
-
-    for region_name, lawd_code in sgg_dict.items():
-        try:
-            officetel_data = officetel_trade(lawd_code=lawd_code, deal_ym=ym, n_rows=9999)
-            all_officetel_data.extend(officetel_data)
-            print(f"[{region_name} - {lawd_code}] 지역 오피스텔 거래 데이터 {len(officetel_data)} 건 수집 완료.")
-        except Exception as e:
-            print(f"Error fetching officetel data for {region_name} ({lawd_code}): {e}")
+    total_regions = len(sgg_dict)
+    for i, (region_name, lawd_code) in enumerate(sgg_dict.items()):
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 오피스텔 매매 데이터 수집 중...")
+        for attempt in range(3):  # 최대 3회 재시도
+            try:
+                officetel_data = officetel_trade(lawd_code=lawd_code, deal_ym=ym, n_rows=9999) # 해당 지역의 오피스텔 매매 거래 데이터 조회
+                all_officetel_data.extend(officetel_data) # 각 지역 데이터 누적
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
+                if attempt == 2:  # 마지막 시도에서도 실패한 경우
+                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
     
     return all_officetel_data
 
@@ -134,11 +138,11 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
             f"{dong} (지번: {jibun})에 위치한 "
             f"'{offi_name}' 오피스텔 {floor_str} 매물이 "
             f"{deal_amount}에 {dealing_type}되었습니다. "
-            f"전용면적은 {area_text}이며, 건축년도는 {build_year}년입니다. "
+            f"전용면적은 {area_text}이며, 건축년도는 {build_year}년입니다."
         )
 
         if dealing_type == '중개거래':
-            record_str += f"중개사소재지는 {estate_agent_location}입니다. "
+            record_str += f" 중개사소재지는 {estate_agent_location}입니다."
 
         if cdeal_type == 'O':
             cdeal_day = get_val('cdealDay','') # 해제사유발생일 ex 25.12.12 -> 2025년 12월 12일
@@ -148,40 +152,8 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
 
         sler_gbn = get_val('slerGbn', '정보없음')
         buyer_gbn = get_val('buyerGbn', '정보없음')
-        record_str += f"매도자 구분은 {sler_gbn}, 매수자 구분은 {buyer_gbn}입니다."
+        record_str += f" 매도자 구분은 {sler_gbn}, 매수자 구분은 {buyer_gbn}입니다."
 
-        # record_str = (
-        #     f"지역코드: {str(record.get('sggCd',''))}\n"
-        #     f"시군구: {str(record.get('sggNm',''))}\n"
-        #     f"법정동명: {str(record.get('umdNm',''))}\n"
-        #     f"지번: {str(record.get('jibun',''))}\n"
-        #     f"단지명: {str(record.get('offiNm', ''))}\n"
-        #     f"전용면적(㎡): {str(record.get('excluUseAr', ''))}\n"
-        #     f"계약년도: {str(record.get('dealYear',''))}\n"
-        #     f"계약월: {str(record.get('dealMonth',''))}\n"
-        #     f"계약일: {str(record.get('dealDay',''))}\n"
-        #     f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
-        #     f"층: {str(record.get('floor', ''))}\n"
-        #     f"건축년도: {str(record.get('buildYear', ''))}\n"
-        #     f"해제여부: {str(record.get('cdealType',''))}\n"
-        #     f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
-        #     f"거래유형: {str(record.get('dealingGbn',''))}\n"
-        #     f"중개사소재지: {str(record.get('estateAgentSggNm',''))}\n"
-        #     f"매도자: {str(record.get('slerGbn', ''))}\n"
-        #     f"매수자: {str(record.get('buyerGbn', ''))}\n"
-        # )
-
-        # 위에 문장을 자연스러운 문장으로 변환 ex "2025년 11월 15일에 거래된 오피스텔 매매 실거래가 정보입니다. ..."
-        # record_str = (
-        #     f"{str(record.get('dealYear',''))}년 {str(record.get('dealMonth',''))}월 {str(record.get('dealDay',''))}일에 거래된 오피스텔 매매 실거래가 정보입니다.\n"
-        #     f"지역코드: {str(record.get('sggCd',''))}, 시군구: {str(record.get('sggNm',''))}, 법정동명: {str(record.get('umdNm',''))}, 지번: {str(record.get('jibun',''))}.\n"
-        #     f"단지명은 {str(record.get('offiNm', ''))}, 전용면적은 {str(record.get('excluUseAr', ''))}㎡입니다.\n"
-        #     f"거래금액은 {str(record.get('dealAmount','')).replace(',', '')}만원이며, 층수는 {str(record.get('floor', ''))}층입니다.\n"
-        #     f"건축년도는 {str(record.get('buildYear', ''))}년이며, 해제여부는 {str(record.get('cdealType',''))}, 해제사유발생일은 {str(record.get('cdealDay',''))}입니다.\n"
-        #     f"거래유형은 {str(record.get('dealingGbn',''))}, 중개사소재지는 {str(record.get('estateAgentSggNm',''))}입니다.\n"
-        #     f"매도자 구분은 {str(record.get('slerGbn', ''))}, 매수자 구분은 {str(record.get('buyerGbn', ''))}입니다.\n"
-        # )
-        
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),
@@ -301,14 +273,19 @@ def get_all_officetel_rent_data(ym: str) -> list[dict]:
     all_officetel_rent_data = []
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     sgg_dict = region.get_all_sgg_code_dict()
+    total_regions = len(sgg_dict)
 
-    for region_name, lawd_code in sgg_dict.items():
-        try:
-            officetel_rent_data = officetel_rent_trade(lawd_code=lawd_code, deal_ym=ym, n_rows=9999)
-            all_officetel_rent_data.extend(officetel_rent_data)
-            print(f"[{region_name} - {lawd_code}] 지역 오피스텔 전월세 거래 데이터 {len(officetel_rent_data)} 건 수집 완료.")
-        except Exception as e:
-            print(f"오류 발생 {region_name} ({lawd_code}): {e}")
+    for i, (region_name, lawd_code) in enumerate(sgg_dict.items()):
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 오피스텔 전월세 거래 데이터 수집 중...")
+        for attempt in range(3):  # 최대 3회 재시도
+            try:
+                officetel_rent_data = officetel_rent_trade(lawd_code=lawd_code, deal_ym=ym, n_rows=9999)
+                all_officetel_rent_data.extend(officetel_rent_data)
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
+                if attempt == 2:  # 마지막 시도에서도 실패한 경우
+                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
     
     return all_officetel_rent_data
 
@@ -419,23 +396,6 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
                 prev_contract_str = "정보없음"
 
         record_str = (
-            # f"지역코드: {str(record.get('sggCd',''))}\n"
-            # f"시군구: {str(record.get('sggNm',''))}\n"
-            # f"법정동명: {str(record.get('umdNm',''))}\n"
-            # f"지번: {str(record.get('jibun',''))}\n"
-            # f"단지명: {str(record.get('offiNm', ''))}\n"
-            # f"전용면적(㎡): {str(record.get('excluUseAr', ''))}\n"
-            # f"계약년도: {str(record.get('dealYear',''))}\n"
-            # f"계약월: {str(record.get('dealMonth',''))}\n"
-            # f"계약일: {str(record.get('dealDay',''))}\n"
-            # f"보증금액(만원): {str(record.get('deposit','')).replace(',', '')}\n"
-            # f"월세금액(만원): {str(record.get('monthlyRent','')).replace(',', '')}\n"
-            # f"층: {str(record.get('floor', ''))}\n"
-            # f"건축년도: {str(record.get('buildYear', ''))}\n"
-            # f"계약기간: {str(record.get('contractTerm',''))}\n"
-            # f"갱신요구권사용: {str(record.get('useRRRight',''))}\n"
-            # f"종전계약보증금(만원): {str(record.get('preDeposit',''))}\n"
-            # f"종전계약월세(만원): {str(record.get('preMonthlyRent',''))}\n"
             f"오피스텔 {deal_type} 거래입니다. "
             f"거래일자는 {deal_date}입니다. "
             f"{dong} (지번: {jibun})에 위치한 "

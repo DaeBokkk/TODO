@@ -66,15 +66,19 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
     all_rh_data = []
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     region_dict = region.get_all_sgg_code_dict()
+    total_regions = len(region_dict)
 
-    for region_name, lawd_code in region_dict.items():
-        print(f"=== {region_name} ({lawd_code}) 지역의 연립다세대 매매 실거래가 데이터 수집 중... ===")
-        try:
-            region_data = rh_trade(lawd_code=lawd_code, deal_ym=ym)
-            all_rh_data.extend(region_data)
-            print(f"  -> {region_name} 지역에서 {len(region_data)}건의 데이터 수집 완료.")
-        except Exception as e:
-            print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+    for i, (region_name, lawd_cd) in enumerate(region_dict.items()):
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 연립다세대 매매 데이터 수집 중...")
+        for attempt in range(3):  # 최대 3회 재시도
+            try:
+                region_data = rh_trade(lawd_code=lawd_cd, deal_ym=ym)
+                all_rh_data.extend(region_data)
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                if attempt == 2:  # 마지막 시도에서도 실패한 경우
+                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
     
     print(f"=== 전체 연립다세대 매매 실거래가 데이터 수집 완료. 총 {len(all_rh_data)}건 수집됨. ===")
     return all_rh_data
@@ -104,29 +108,7 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
             except:
                 return "0원"
 
-    for record in data:
-        # record_str = (
-        #     f"지역코드: {str(record.get('sggCd',''))}\n"
-        #     f"법정동명: {str(record.get('umdNm',''))}\n"
-        #     f"연립다세대명: {str(record.get('mhouseNm', ''))}\n"
-        #     f"지번: {str(record.get('jibun', ''))}\n"
-        #     f"건축년도: {str(record.get('buildYear', ''))}\n"
-        #     f"전용면적(㎡): {str(record.get('excluUseAr',''))}\n"
-        #     f"대지권면적(㎡): {str(record.get('landAr',''))}\n"
-        #     f"계약년도: {str(record.get('dealYear',''))}\n"
-        #     f"계약월: {str(record.get('dealMonth',''))}\n"
-        #     f"계약일: {str(record.get('dealDay',''))}\n"
-        #     f"거래금액(만원): {str(record.get('dealAmount','')).replace(',', '')}\n"
-        #     f"층: {str(record.get('floor', ''))}\n"
-        #     f"해제여부: {str(record.get('cdealType',''))}\n"
-        #     f"해제사유발생일: {str(record.get('cdealDay',''))}\n"
-        #     f"거래유형(중개 및 직거래 여부): {str(record.get('dealingGbn',''))}\n"
-        #     f"중개사소재지(시군구 단위): {str(record.get('estateAgentSggNm',''))}\n"
-        #     f"등기일자: {str(record.get('rgstDate',''))}\n"
-        #     f"거래주체정보_매도자(개인/법인/공공기관/기타): {str(record.get('slerGbn',''))}\n"
-        #     f"거래주체정보_매수자(개인/법인/공공기관/기타): {str(record.get('buyerGbn',''))}\n"
-        # )
-        
+    for record in data:        
         year = get_val('dealYear')
         month = get_val('dealMonth').zfill(2)
         day = get_val('dealDay').zfill(2)
@@ -157,8 +139,8 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
         
         if cdeal_date:
             try:
-                cdeal_year, cdeal_month, cdeal_day = cdeal_date.split('.')
-                cdeal_date = f"{int(cdeal_year)}년 {int(cdeal_month)}월 {int(cdeal_day)}일"
+                cdeal_year, cdeal_month, cdeal_day = cdeal_date.split('.') # 25.5.12 형식에서 년, 월, 일 분리
+                cdeal_date = f"20{int(cdeal_year)}년 {int(cdeal_month):02d}월 {int(cdeal_day):02d}일" # 2025년 05월 12일 형식으로 변환
             except:
                 cdeal_date = cdeal_date
 
@@ -185,20 +167,6 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
             f"매도자구분은 {sler_gbn}이며, 매수자구분은 {buyer_gbn}입니다."
             )
 
-            # f"법정동명: {dong} | "
-            # f"도로명주소 : {dong} {jibun} | "
-            # f"연립다세대명: {mhouse_name} | "
-            # f"전용면적: {area_text} | "
-            # f"대지권면적: {land_area_text} | "
-            # f"층수: {floor_str} | "
-            # f"거래금액: {deal_amount} | "
-            # f"전용면적: {area_raw} | "
-            # f"건축년도: {build_year}년 | "
-            # f"거래유형: {dealing_gbn} | "
-            # f"매도자구분: {sler_gbn} | "
-            # f"매수자구분: {buyer_gbn} | "
-            # f"주택유형: {house_type}"
-
         if dealing_gbn == '중개거래':
             record_str += f" 중개사소재지는 {estate_agent_sgg_nm}입니다."
 
@@ -208,29 +176,11 @@ def return_rh_trade_string(data: list[dict]) -> list[dict]:
         if rgst_date:
             try:
                 rgst_year, rgst_month, rgst_day = rgst_date.split('.')
-                rgst_date_fmt = f"20{int(rgst_year)}년 {int(rgst_month)}월 {int(rgst_day)}일"
+                rgst_date_fmt = f"20{int(rgst_year)}년 {int(rgst_month):02d}월 {int(rgst_day):02d}일"
                 record_str += f" 등기일자는 {rgst_date_fmt}입니다."
             except:
-                record_str += f" 등기일자: {rgst_date}입니다."
-        # extras = []
-        # if rgst_date: # ex 25.01.12
-        #     rgst_year, rgst_month, rgst_day = rgst_date.split('.')
-        #     rgst_date = f"20{(rgst_year)}년 {(rgst_month)}월 {(rgst_day)}일"
-        #     extras.append(f"등기일자: {rgst_date}")
-            
-        # if dealing_gbn == '중개거래':
-        #     extras.append(f"중개사소재지: {estate_agent_sgg_nm}")
-
-        # if cdeal_type == 'O':
-        #     extras.append("거래해제여부: 해제")
-        #     extras.append(f"해제사유발생일: {cdeal_date}")
-
-        # extras.append(f"매도자구분: {get_val('slerGbn', '정보없음')}")
-        # extras.append(f"매수자구분: {get_val('buyerGbn', '정보없음')}")
-
-        # if extras:
-        #     record_str += " | " + " | ".join(extras)
-
+                continue
+        
         last_data = {
             "metadata": {
                 "region_code": record.get('sggCd',''),
@@ -356,15 +306,19 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
     print (f"=== {ym} 전국 연립다세대 전월세 데이터 수집 시작 ===")
     
     region_dict = region.get_all_sgg_code_dict()
+    total_regions = len(region_dict)
 
-    for region_name, lawd_code in region_dict.items():
-        print(f"=== {region_name} ({lawd_code}) 지역의 연립다세대 전월세 실거래가 데이터 수집 중... ===")
-        try:
-            region_data = rh_rent_trade(lawd_code=lawd_code, deal_ym=ym)
-            all_rh_rent_data.extend(region_data)
-            print(f"  -> {region_name} 지역에서 {len(region_data)}건의 데이터 수집 완료.")
-        except Exception as e:
-            print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+    for i, (region_name, lawd_code) in enumerate(region_dict.items()):
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 연립다세대 전월세 실거래가 데이터 수집 중... ===")
+        for attempt in range(3):  # 최대 3회 재시도
+            try:
+                region_data = rh_rent_trade(lawd_code=lawd_code, deal_ym=ym)
+                all_rh_rent_data.extend(region_data)
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                if attempt == 2:  # 마지막 시도에서도 실패한 경우
+                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
     
     print(f"=== 전체 연립다세대 전월세 실거래가 데이터 수집 완료. 총 {len(all_rh_rent_data)}건 수집됨. ===")
     return all_rh_rent_data

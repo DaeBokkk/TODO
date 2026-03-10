@@ -70,12 +70,18 @@ def get_all_sm_trade_data(ym: str) -> list[dict]:
     total_regions = len(sgg_code_dict)
 
     for i, (region_name, lawd_cd) in enumerate(sgg_code_dict.items()):
-        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 데이터 수집 중...")
-        sm_data = sm_trade(lawd_code=lawd_cd, deal_ym=ym)
-        if sm_data:
-            all_sm_data.extend(sm_data)
-        else:
-            print(f"   > {region_name} 지역 단독/다가구 매매 거래 데이터가 없습니다.")
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 단독/다가구 매매 데이터 수집 중...")
+        for attempt in range(3):  # 최대 3회 재시도
+            try:
+                sm_data = sm_trade(lawd_code=lawd_cd, deal_ym=ym)
+                all_sm_data.extend(sm_data)
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                if attempt == 2:  # 마지막 시도에서도 실패한 경우
+                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
+                continue
+
     return all_sm_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
@@ -154,7 +160,7 @@ def return_sm_trade_string(data: list[dict]) -> list[dict]:
         if cdeal_type == "O":  # 해제여부가 'O'인 경우에만 해제사유발생일 추가
             cdeal_day = get_val('cdealDay', '') # 해제사유발생일 ex 25.01.12 -> 2025년 01월 12일
             cdeal_year, cdeal_month, cdeal_day_part = cdeal_day.split('.')
-            cdeal_day_formatted = f"20{cdeal_year}년 {cdeal_month}월 {cdeal_day_part}일"
+            cdeal_day_formatted = f"20{int(cdeal_year)}년 {int(cdeal_month):02d}월 {int(cdeal_day_part):02d}일"
             record_str += f" 이 거래는 해제된 거래로, 해제사유발생일은 {cdeal_day_formatted}입니다."
 
         # 메타데이터 추가
@@ -277,12 +283,18 @@ def get_all_sm_rent_data(ym: str) -> list[dict]:
     total_regions = len(sgg_code_dict)
 
     for i, (region_name, lawd_cd) in enumerate(sgg_code_dict.items()):
-        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 데이터 수집 중...")
-        sm_rent_data = sm_rent_trade(lawd_code=lawd_cd, deal_ym=ym)
-        if sm_rent_data:
-            all_sm_rent_data.extend(sm_rent_data)
-        else:
-            print(f"   > {region_name} 지역 단독/다가구 전월세 거래 데이터가 없습니다.")
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 단독/다가구 전월세 데이터 수집 중...")
+        for attempt in range(3):  # 최대 3회 재시도
+            try:
+                sm_rent_data = sm_rent_trade(lawd_code=lawd_cd, deal_ym=ym)
+                all_sm_rent_data.extend(sm_rent_data)
+                break  # 성공 시 루프 탈출
+            except Exception as e:
+                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                if attempt == 2:  # 마지막 시도에서도 실패한 경우
+                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
+                continue
+
     return all_sm_rent_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
