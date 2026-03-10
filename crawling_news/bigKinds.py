@@ -209,9 +209,21 @@ def html_to_text_sel(driver: webdriver.Chrome, wait: WebDriverWait) -> list[dict
                 # -------------------------------------------------------
                 # 뉴스 클릭 처리
                 # 클릭 대상: 제목/본문이 있는 내부 div
-                click_target_xpath = f'{current_item_xpath}/div/div[2]/a/div'
-                click_element = wait.until(EC.element_to_be_clickable((By.XPATH, click_target_xpath)))
-                driver.execute_script("arguments[0].click();", click_element)
+                click_target_xpath = f'{current_item_xpath}//a' 
+
+                click_element = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, click_target_xpath)) 
+                )
+
+                for attempt in range(3):  # 최대 3회 시도
+                    try:
+                        driver.execute_script("arguments[0].click();", click_element)
+                        print(f"클릭 성공 [{i+1}/{count}]: {news_id}")
+                        break  # 클릭 성공 시 루프 탈출
+                    except Exception as e:
+                        print(f"클릭 실패 (시도 {attempt+1}/3) [{i+1}/{count}]: {e}")
+                        time.sleep(0.5)  # 재시도 전 대기
+
                 # print(f"클릭: {news_id}")
 
                 # -------------------------------------------------------
