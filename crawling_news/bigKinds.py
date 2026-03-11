@@ -22,8 +22,6 @@ def init_driver() -> webdriver.Chrome:
     # options.add_argument("--headless")       # 창 없이 실행
     # options.add_argument("--no-sandbox")     # 리눅스 보안 권한 문제 방지
     # options.add_argument("--disable-dev-shm-usage") # 메모리 공유 문제 방지
-
-    # options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
 
     driver = webdriver.Chrome(options=options)
