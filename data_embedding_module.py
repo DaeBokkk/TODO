@@ -182,8 +182,8 @@ def run_full_automation(embeddings: Embeddings):
     DB 적재 함수를 호출하기 전에 '데이터 검증(안전장치)'을 수행합니다.
     """
     
-    # 1. 처리할 파일 패턴 목록 (사용자 요청 반영)
-    # 날짜 부분(202xxxxx)을 *로 처리하여 모든 날짜 파일을 인식합니다.
+    # 1. 처리할 파일 패턴 목록
+    # 날짜 부분(202xxxxx)을 *로 처리하여 모든 날짜 파일을 인식함.
     target_patterns = [
         "apt_data_*.txt",        # 아파트 데이터
         "land_data_*.txt",       # 토지 데이터
@@ -192,7 +192,7 @@ def run_full_automation(embeddings: Embeddings):
         "apt_rent_data_*.txt"    # 기존 전월세 데이터
     ]
 
-    print(f"\n🚀 [Automation] 다중 카테고리 데이터 적재 시작")
+    print(f"\n 다중 카테고리 데이터 적재 시작")
 
     total_files = 0
 
@@ -203,7 +203,7 @@ def run_full_automation(embeddings: Embeddings):
         if not files:
             continue
 
-        print(f"\n📂 [카테고리] '{pattern}' 패턴 파일 {len(files)}개 발견")
+        print(f"\n [카테고리] '{pattern}' 패턴 파일 {len(files)}개 발견")
         
         for file_path in files:
             print(f"\n--- [Processing] {file_path} ---")
