@@ -76,11 +76,10 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
                 all_rh_data.extend(region_data)
                 break  # 성공 시 루프 탈출
             except Exception as e:
-                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
-                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
+                    print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
-    print(f"=== 전체 연립다세대 매매 실거래가 데이터 수집 완료. 총 {len(all_rh_data)}건 수집됨. ===")
     return all_rh_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
@@ -207,6 +206,8 @@ def save_rh_trade_data_to_txt() -> None:
     # 데이터 수집
     all_rh_data = get_all_rh_trade_data(ym=ym) + get_all_rh_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
 
+    print(f"=== 이번달과 지난달 연립다세대 매매 거래 데이터 총 {len(all_rh_data)}건 수집됨. ===")
+
     if not all_rh_data:
         print("=== 수집된 데이터가 없습니다. 파일 저장을 수행하지 않습니다. ===")
         return
@@ -309,18 +310,17 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
     total_regions = len(region_dict)
 
     for i, (region_name, lawd_code) in enumerate(region_dict.items()):
-        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 연립다세대 전월세 실거래가 데이터 수집 중... ===")
+        print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 연립다세대 전월세 실거래가 데이터 수집 중...")
         for attempt in range(3):  # 최대 3회 재시도
             try:
                 region_data = rh_rent_trade(lawd_code=lawd_code, deal_ym=ym)
                 all_rh_rent_data.extend(region_data)
                 break  # 성공 시 루프 탈출
             except Exception as e:
-                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
-                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
+                    print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
-    print(f"=== 전체 연립다세대 전월세 실거래가 데이터 수집 완료. 총 {len(all_rh_rent_data)}건 수집됨. ===")
     return all_rh_rent_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
@@ -467,6 +467,8 @@ def save_rh_rent_data_to_txt() -> None:
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     # 데이터 수집
     all_rh_rent_data = get_all_rh_rent_data(ym=ym) + get_all_rh_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+
+    print(f"=== 이번달과 지난달 연립다세대 전월세 거래 데이터 총 {len(all_rh_rent_data)}건 수집됨. ===")
 
     if not all_rh_rent_data:
         print("=== 수집된 데이터가 없습니다. 파일 저장을 수행하지 않습니다. ===")

@@ -180,6 +180,8 @@ def save_officetel_trade_data_to_txt() -> None:
 
     officetel_data = get_all_officetel_trade_data(ym) + get_all_officetel_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
     
+    print(f"=== 이번달과 지난달 오피스텔 매매 거래 데이터 총 {len(officetel_data)}건 수집됨. ===")
+
     if not officetel_data:
         print("=== 이번달과 지난달 오피스텔 매매 거래 데이터가 모두 0건입니다. 파일 저장을 수행하지 않습니다. ===")
         return
@@ -285,7 +287,7 @@ def get_all_officetel_rent_data(ym: str) -> list[dict]:
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
-                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
+                    print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
     return all_officetel_rent_data
 
@@ -437,6 +439,8 @@ def save_officetel_rent_data_to_txt() -> None:
 
     officetel_rent_data = get_all_officetel_rent_data(ym) + get_all_officetel_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
     
+    print(f"=== 이번달과 지난달 오피스텔 전월세 거래 데이터 총 {len(officetel_rent_data)}건 수집됨. ===")
+
     if not officetel_rent_data:
         print("=== 이번달과 지난달 오피스텔 전월세 거래 데이터가 모두 0건입니다. 파일 저장을 수행하지 않습니다. ===")
         return

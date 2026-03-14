@@ -21,8 +21,11 @@ def save_apt_data_to_txt() -> None:
     df2 = apt_sub.get_all_apt_trade_data(prev_ym)
 
     total_df = pd.concat([df1, df2], ignore_index=True)
+
+    print(f"=== 이번달과 지난달에 조회된 아파트 매매 거래 데이터 총 {len(total_df)}건 수집됨. ===")
+
     if total_df.empty:
-        print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 실거래가 데이터가 전혀 없습니다. ===")
+        print(f"=== {ym}와 {prev_ym} 기간에 조회된 실거래가 데이터가 전혀 없습니다. ===")
         return
     
     text_strings: list[dict] = apt_sub.return_apt_string(total_df)
@@ -69,8 +72,10 @@ def save_apt_rent_data_to_txt():
     date = f"{year}{month:02d}{now.day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
     rent_data = apt_sub.get_all_apt_rent_data(ym) + apt_sub.get_all_apt_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
 
+    print(f"=== 이번달과 지난달에 조회된 아파트 전월세 거래 데이터 총 {len(rent_data)}건 수집됨. ===")
+
     if not rent_data:
-        print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 전월세 데이터가 전혀 없습니다. ===")
+        print(f"=== {ym}와 {prev_ym} 기간에 조회된 전월세 데이터가 전혀 없습니다. ===")
         return
     
     rent_strings = apt_sub.return_apt_rent_string(rent_data)

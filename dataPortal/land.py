@@ -79,8 +79,6 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
                 print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"    -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
-
-    print(f"\n=== 모든 지역 데이터 병합 완료. {ym} 경기도 총 토지 매매 데이터: {len(all_land_data)}건 ===")
     
     return all_land_data
 
@@ -231,6 +229,8 @@ def save_land_trade_data_to_txt() -> None:
     
     # 전체 토지 데이터 조회
     total_data : list[dict] = get_all_land_trade_data(ym) + get_all_land_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+
+    print(f"=== 이번달과 지난달에 조회된 토지 매매 데이터: {len(total_data)}건 ===")
 
     # 데이터가 없으면 종료
     if not total_data:

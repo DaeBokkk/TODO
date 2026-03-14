@@ -77,9 +77,9 @@ def get_all_sm_trade_data(ym: str) -> list[dict]:
                 all_sm_data.extend(sm_data)
                 break  # 성공 시 루프 탈출
             except Exception as e:
-                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
-                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
+                    print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
                 continue
 
     return all_sm_data
@@ -186,6 +186,8 @@ def save_sm_trade_data_to_txt() -> None:
 
     total_df: list[dict] = get_all_sm_trade_data(ym) + get_all_sm_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
     
+    print(f"=== 이번달과 지난달 단독/다가구 매매 거래 데이터 총 {len(total_df)}건 수집됨. ===")
+
     if not total_df:
         print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 단독/다가구 매매 실거래가 데이터가 전혀 없습니다. ===")
         return
@@ -290,11 +292,11 @@ def get_all_sm_rent_data(ym: str) -> list[dict]:
                 all_sm_rent_data.extend(sm_rent_data)
                 break  # 성공 시 루프 탈출
             except Exception as e:
-                print(f"  !!! {region_name} 지역 데이터 수집 중 오류 발생: {e}")
+                print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
-                    print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
+                    print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
                 continue
-
+    
     return all_sm_rent_data
 
 # 병합된 딕셔너리 리스트를 문자열로 반환 함수
@@ -432,6 +434,8 @@ def save_sm_rent_data_to_txt() -> None:
 
     total_df: list[dict] = get_all_sm_rent_data(ym=ym) + get_all_sm_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
     
+    print(f"=== 이번달과 지난달 단독/다가구 전월세 거래 데이터 총 {len(total_df)}건 수집됨. ===")
+
     if not total_df:
         print(f"=== {ym} 또는 {prev_ym} 기간에 조회된 단독/다가구 전월세 실거래가 데이터가 전혀 없습니다. ===")
         return
