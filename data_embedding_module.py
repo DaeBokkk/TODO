@@ -34,7 +34,7 @@ DB_USER = "rag"
 DB_PASSWORD = "rag"
 DB_NAME = "rag"
 
-# [중요] LangChain PGVector는 SQLAlchemy 형식의 연결 문자열을 사용합니다.
+# [중요] LangChain PGVector는 SQLAlchemy 형식의 연결 문자열을 사용한다.
 # DB_CONNECTION_STRING = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 # (3) [중요] 타겟 테이블 및 컬럼 설정 (사용자 정의 스키마)
