@@ -175,19 +175,10 @@ def search_law_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> list[di
     print(f"총 {len(total_laws)}개의 법령 본문 크롤링 완료.")
     return total_laws
 
-# 문자열 리스트를 텍스트 파일로 저장
-def save_as_txt(law_texts: list[dict]) -> None:
-    filename = "txts/laws/law_texts.txt"
-    with open(filename, 'w', encoding="utf-8") as f:
-        for i, text in enumerate(law_texts, start=1):
-            f.write(f"=== 법령 {i}번째 본문 시작 ===\n")
-            f.write(text)
-            f.write(f"\n=== 법령 {i}번째 본문 끝 ===\n\n")
-    print(f"법령 본문이 '{filename}' 파일로 저장되었습니다.")
 
 # 메타데이터 포함 전체 파이프라인 함수(region_code, enactment_date 포함)
 def save_as_txt_with_metadata(law_texts: list[dict]) -> None:
-    filename = "txts/laws/law_texts_with_metadata.txt"
+    filename = "txts/laws/laws.txt"
     # json 형식으로 저장
     with open(filename, 'w', encoding="utf-8") as f:
         for law in (law_texts):
