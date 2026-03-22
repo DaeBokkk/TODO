@@ -184,20 +184,10 @@ def run_full_automation(embeddings: Embeddings):
     
     # 프로그램이 실행되는 '오늘' 날짜를 YYYYMMDD 형태로 가져온다.
     # today_str = datetime.now().strftime("%Y%m%d")
-    today_str = 20260310
+    today_str = "20260310"
     
     target_patterns = [
-        f"apt_data_{today_str}.txt",        # 아파트 매매
-        f"apt_rent_data_{today_str}.txt"    # 아파트 전/월세 실거래가
-        f"land_data_{today_str}.txt",       # 토지 매매
-        f"officetel_data_{today_str}.txt",  # 오피스텔 매매
-        f"officetel_rent_data_{today_str}.txt" # 오피스텔 전/월세
-        f"rh_data_{today_str}.txt" # 연립다세대 매매
-        f"rh_rent_data_{today_str}.txt" # 연립다세대 전/월세
-        f"sm_data_{today_str}.txt" # 단독/다가구 매매
-        f"sm_rent_data_{today_str}.txt" # 단독/다가구 전/월세
-        f"bitkinds_news_{today_str}.txt",   # 부동산 관련 뉴스(경기도 한정)
-        # laws 부동산 관련 법류 정리 파일은 1개라 수동적재
+        f"*{today_str}*.txt"
     ]
 
     print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
@@ -242,70 +232,6 @@ def run_full_automation(embeddings: Embeddings):
                 continue
 
     print(f"\n✅ [완료] 총 {total_files}개의 금일 파일 처리가 끝났어요.")
-
-
-# # ------------------------------------------------------------------------------
-# # 4. 자동화 로직 (안전장치 및 파일 순회 기능 추가)
-# # ------------------------------------------------------------------------------
-# def run_full_automation(embeddings: Embeddings):
-#     """
-#     여러 파일 패턴을 자동으로 탐색하고,
-#     DB 적재 함수를 호출하기 전에 '데이터 검증(안전장치)'을 수행합니다.
-#     """
-    
-#     # 1. 처리할 파일 패턴 목록
-#     # 날짜 부분(202xxxxx)을 *로 처리하여 모든 날짜 파일을 인식함.
-#     target_patterns = [
-#         "apt_data_*.txt",        # 아파트 데이터
-#         "land_data_*.txt",       # 토지 데이터
-#         "bitkinds_news_*.txt",   # 뉴스 데이터
-#         "officetel_data_*.txt",  # 오피스텔 데이터
-#         "apt_rent_data_*.txt"    # 기존 전월세 데이터
-#     ]
-
-#     print(f"\n 다중 카테고리 데이터 적재 시작")
-
-#     total_files = 0
-
-#     for pattern in target_patterns:
-#         # 패턴에 맞는 파일 찾기 (날짜 무관, 정렬하여 순서대로 처리)
-#         files = sorted(glob.glob(pattern))
-        
-#         if not files:
-#             continue
-
-#         print(f"\n [카테고리] '{pattern}' 패턴 파일 {len(files)}개 발견")
-        
-#         for file_path in files:
-#             print(f"\n--- [Processing] {file_path} ---")
-#             try:
-#                 # (1) 파일 로드 및 청킹
-#                 raw_data = load_raw_jsonl_file(file_path)
-#                 chunks = create_and_chunk_documents(raw_data)
-                
-#                 # (2) [안전장치] DB 함수 호출 전, ID 누락 검사 및 보정
-#                 # DB 함수를 건드리지 않고, 들어가는 데이터(chunks)를 미리 수정합니다.
-#                 fixed_count = 0
-#                 for doc in chunks:
-#                     current_id = doc.metadata.get("rdb_id") or doc.metadata.get("id")
-#                     if not current_id:
-#                         # ID가 없으면 메타데이터에 'rdb_id'를 강제로 주입
-#                         doc.metadata["rdb_id"] = f"AUTO_{uuid.uuid4().hex[:8]}"
-#                         fixed_count += 1
-                
-#                 if fixed_count > 0:
-#                     print(f"   ⚠️ [Safety] ID가 없는 {fixed_count}개 데이터에 임시 ID를 발급했습니다.")
-
-#                 # (3) DB 적재 함수 호출 (검증된 chunks 전달)
-#                 save_to_specific_table(chunks, embeddings)
-                
-#                 total_files += 1
-                
-#             except Exception as e:
-#                 print(f"❌ [Error] {file_path} 처리 실패: {e}")
-#                 continue
-
-#     print(f"\n✅ [완료] 총 {total_files}개의 파일 처리가 끝났습니다.")
 
 
 # ------------------------------------------------------------------------------
