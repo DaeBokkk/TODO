@@ -72,7 +72,11 @@ const STORAGE_KEY = 'propchat_chats_v1';
     }
 
     function formatBotText(text) {
-      return escapeHtml(text).replaceAll('\n', '<br>');
+        return marked.parse(
+            text.trim()
+                .replace(/\n{2,}/g, '\n\n') // 문단 줄바꿈 유지
+                .replace(/\n/g, ' ') // 문장 줄바꿈 제거
+        );
     }
 
     function addMessageToChat(sessionId, role, text) {
