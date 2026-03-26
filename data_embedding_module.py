@@ -4,7 +4,7 @@ import glob  # 폴더 내 여러 파일을 찾기 위한 라이브러리
 import uuid
 import json
 from typing import List
-import psycopg2 # [수정] 사용자가 설치한 psycopg2-binary 사용
+import psycopg2 # 사용자가 설치한 psycopg2-binary 사용
 from datetime import datetime  # 오늘 날짜를 구하기 위한 모듈
 
 # LangChain 필수 라이브러리
@@ -42,7 +42,6 @@ DB_NAME = "rag"
 COLLECTION_TABLE = "public.ko_sbert_collection"
 EMBEDDING_TABLE = "public.ko_sbert_embedding"
 COLLECTION_NAME = "embedding_vector_ko_sbert" # 사용할 컬렉션 이름
-
 
 # ------------------------------------------------------------------------------
 # 2. 임베딩 모델 로드 함수
@@ -122,8 +121,8 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
                 uuid, 
                 collection_id, 
                 embedding, 
-                document, 
-                cmetadata, 
+                document,
+                cmetadata,
                 custom_id
             ) VALUES (%s, %s, %s, %s, %s, %s)
         """
