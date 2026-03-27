@@ -185,7 +185,7 @@ def run_full_automation(embeddings: Embeddings):
     today_str = datetime.now().strftime("%Y%m%d")
     
     target_patterns = [
-        f"*{today_str}*.txt"
+        f"**/**/*{today_str}*.txt"
     ]
 
     print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
