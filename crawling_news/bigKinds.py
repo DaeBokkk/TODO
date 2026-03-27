@@ -61,7 +61,7 @@ def search_keyword(driver: webdriver.Chrome, wait: WebDriverWait) -> None:
     # 2025-11-16 형식으로 변환
     # s_today = "2026-02-14" 
     today = datetime.datetime.now().strftime("%Y-%m-%d")
-    # today = "2026-03-19"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # today = "2026-03-26"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # //*[@id="ig-sd-btn"] xpath 클릭
     search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ig-sd-btn"]')))
     search_button.click()
@@ -335,7 +335,7 @@ def save_as_txt1(list_dict: list[dict]) -> None:
 def save_as_txt_with_metadata(list_dict: list[dict]) -> None: # region_code 차후에 수정
     news_list = list_dict # 리스트 딕셔너리(뉴스 제목과 본문)
     enactment_date = datetime.datetime.now().strftime("%Y%m%d") # 20251116 형식
-    # enactment_date = "202603109"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # enactment_date = "20260326"  # 테스트용 고정 날짜 (나중에 지우기)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     region_code = "41000"  # 예시: 경기도 지역 코드 # 향후 수정 필요 ex -> "41000" # 경기도 
     # 파일명: news/bitkinds_news_20251116.txt ex) 2025년 11월 16일
     final_news_list = []
