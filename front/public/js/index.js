@@ -1,9 +1,10 @@
 const STORAGE_KEY = 'propchat_chats_v1';
 
-    let chats = [];
-    let currentSessionId = null;
-    let isComposing = false;
-    let isSending = false;
+    let chats = []; // 전체 대화 목록을 저장하는 배열
+    let currentSessionId = null; // 현재 활성화된 대화의 세션 ID를 저장하는 변수
+    let isComposing = false; // 한글 입력 중인지 여부를 나타내는 플래그
+    let isSending = false; // 메시지 전송 중인지 여부를 나타내는 플래그
+    let pendingSessionId = null; // 현재 API 요청과 연결된 세션 ID를 저장하는 변수
 
     const messagesEl = document.getElementById('messages');
     const chatListEl = document.getElementById('chatList');
@@ -267,16 +268,21 @@ const STORAGE_KEY = 'propchat_chats_v1';
     }
 
     function renderMessages(sessionId) {
-      const chat = getChatBySessionId(sessionId);
-      if (!chat) return;
-
-      messagesEl.innerHTML = `<div class="date-divider">오늘</div>`;
-
-      chat.messages.forEach(message => {
-        appendMessageToDOM(message.role, message.text, message.time);
-      });
-
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+        const chat = getChatBySessionId(sessionId);
+        if (!chat) return;
+      
+        messagesEl.innerHTML = `<div class="date-divider">오늘</div>`;
+      
+        chat.messages.forEach(message => {
+          appendMessageToDOM(message.role, message.text, message.time);
+        });
+      
+        // 추가된 부분: 현재 화면의 세션이 응답을 대기 중이라면 타이핑 인디케이터 다시 표시
+        if (sessionId === pendingSessionId) {
+          showTypingWithText('답변 생성 중입니다...');
+        }
+      
+        messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
     function showTypingWithText(text) {
@@ -315,118 +321,111 @@ const STORAGE_KEY = 'propchat_chats_v1';
     }
 
     async function sendMessage() {
-      const text = userInputEl.value.trim();
-      if (!text || !currentSessionId || isSending) return;
-
-      // 현재 요청의 세션 ID 저장
-      const requestSessionId = currentSessionId;
-
-      // 전송 상태 설정 및 전송 버튼만 비활성화
-      isSending = true;
-      sendBtnEl.disabled = true;
-      sendBtnEl.style.opacity = '0.5';
-      sendBtnEl.style.cursor = 'not-allowed';
-
-      addMessageToChat(requestSessionId, 'user', text);
-      updateChatTitle(requestSessionId, text);
-
-      renderSidebar();
-      renderMessages(requestSessionId);
-
-      userInputEl.value = '';
-      userInputEl.style.height = 'auto';
-
-      const loadingTextBase = '답변 생성 중입니다';
-      const loadingMsg = showTypingWithText(loadingTextBase + '.');
-
-      let dotCount = 1;
-      const loadingInterval = setInterval(() => {
-        dotCount = (dotCount % 3) + 1;
-        const bubble = loadingMsg?.querySelector('.bubble');
-        if (bubble) {
-          bubble.textContent = loadingTextBase + '.'.repeat(dotCount);
+        const text = userInputEl.value.trim();
+        if (!text || !currentSessionId || isSending) return;
+      
+        const requestSessionId = currentSessionId;
+        pendingSessionId = requestSessionId; // 추가: 현재 응답을 대기 중인 세션 ID 저장
+      
+        isSending = true;
+        sendBtnEl.disabled = true;
+        sendBtnEl.style.opacity = '0.5';
+        sendBtnEl.style.cursor = 'not-allowed';
+      
+        addMessageToChat(requestSessionId, 'user', text);
+        updateChatTitle(requestSessionId, text);
+      
+        renderSidebar();
+        renderMessages(requestSessionId); // 여기서 showTypingWithText가 자동으로 호출됩니다.
+      
+        userInputEl.value = '';
+        userInputEl.style.height = 'auto';
+      
+        const loadingTextBase = '답변 생성 중입니다';
+        let dotCount = 1;
+      
+        // 기존 loadingMsg 참조 대신, 매번 DOM에서 현재 요소를 찾도록 변경
+        const loadingInterval = setInterval(() => {
+          dotCount = (dotCount % 3) + 1;
+          const bubble = document.querySelector('#typingRow .bubble');
+          if (bubble) {
+            bubble.textContent = loadingTextBase + '.'.repeat(dotCount);
+          }
+        }, 500);
+      
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
+          const response = await fetch('http://172.30.1.17:8000/v1/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: {
+                user: text,
+                session_id: requestSessionId
+              }
+            }),
+            signal: controller.signal 
+          });
+      
+          clearTimeout(timeoutId);
+      
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+      
+          const data = await response.json();
+      
+          if (data.error) {
+            throw new Error(data.error);
+          }
+      
+          clearInterval(loadingInterval);
+          pendingSessionId = null; // ✨ 추가: 대기 상태 해제
+          
+          if (currentSessionId === requestSessionId) {
+            removeTyping();
+          }
+      
+          const botReply = data.answer || data.response || data.message || '응답을 받지 못했습니다.';
+          addMessageToChat(requestSessionId, 'bot', botReply);
+      
+          if (currentSessionId === requestSessionId) {
+            renderSidebar();
+            renderMessages(requestSessionId);
+          } else {
+            renderSidebar();
+          }
+      
+        } catch (error) {
+          console.error('API 요청 오류:', error);
+      
+          clearInterval(loadingInterval);
+          pendingSessionId = null; // ✨ 추가: 대기 상태 해제
+          
+          if (currentSessionId === requestSessionId) {
+            removeTyping();
+          }
+      
+          addMessageToChat(requestSessionId, 'bot', '죄송합니다. 현재 서비스에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
+          
+          if (currentSessionId === requestSessionId) {
+            renderSidebar();
+            renderMessages(requestSessionId);
+          } else {
+            renderSidebar();
+          }
+        } finally {
+          isSending = false;
+          if (currentSessionId === requestSessionId) {
+            sendBtnEl.disabled = false;
+            sendBtnEl.style.opacity = '';
+            sendBtnEl.style.cursor = '';
+          }
         }
-      }, 500);
-
-      try {
-        // 타임 아웃 시간 1분 설정
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-        const response = await fetch('http://172.30.1.17:8000/v1/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt: {
-              user: text,
-              session_id: requestSessionId
-            }
-          }),
-          signal: controller.signal 
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        clearInterval(loadingInterval);
-        
-        // 현재 세션이 요청한 세션과 같을 때만 타이핑 제거
-        if (currentSessionId === requestSessionId) {
-          removeTyping();
-        }
-
-        const botReply = data.answer || data.response || data.message || '응답을 받지 못했습니다.';
-        addMessageToChat(requestSessionId, 'bot', botReply);
-
-        // 현재 세션이 요청한 세션과 같을 때만 화면 업데이트
-        if (currentSessionId === requestSessionId) {
-          renderSidebar();
-          renderMessages(requestSessionId);
-        } else {
-          // 다른 세션이 활성화되어 있다면 사이드바만 업데이트
-          renderSidebar();
-        }
-
-      } catch (error) {
-        console.error('API 요청 오류:', error);
-
-        clearInterval(loadingInterval);
-        
-        // 현재 세션이 요청한 세션과 같을 때만 타이핑 제거
-        if (currentSessionId === requestSessionId) {
-          removeTyping();
-        }
-
-        addMessageToChat(requestSessionId, 'bot', '죄송합니다. 현재 서비스에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
-        
-        // 현재 세션이 요청한 세션과 같을 때만 화면 업데이트
-        if (currentSessionId === requestSessionId) {
-          renderSidebar();
-          renderMessages(requestSessionId);
-        } else {
-          // 다른 세션이 활성화되어 있다면 사이드바만 업데이트
-          renderSidebar();
-        }
-      } finally {
-        // 전송 상태 해제 및 전송 버튼 다시 활성화 (현재 세션일 때만)
-        isSending = false;
-        if (currentSessionId === requestSessionId) {
-          sendBtnEl.disabled = false;
-          sendBtnEl.style.opacity = '';
-          sendBtnEl.style.cursor = '';
-        }
-      }
     }
 
     function handleKeydown(e) {
