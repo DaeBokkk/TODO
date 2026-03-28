@@ -8,6 +8,7 @@ import datetime
 from dataPortal import region
 import json
 import glob
+import time
 
 # 초기화
 dotenv.load_dotenv()
@@ -67,6 +68,8 @@ def get_all_officetel_trade_data(ym: str) -> list[dict]:
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     sgg_dict = region.get_all_sgg_code_dict()
     total_regions = len(sgg_dict)
+    base_delay = 1.0  # 재시도 시 기본 지연 시간 (초)
+
     for i, (region_name, lawd_code) in enumerate(sgg_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 오피스텔 매매 데이터 수집 중...")
         for attempt in range(3):  # 최대 3회 재시도
@@ -76,6 +79,10 @@ def get_all_officetel_trade_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 마지막 시도가 아니면 지연 후 재시도
+                    delay = base_delay * (2 ** attempt)  # 지수적 백오프
+                    print(f"  -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
     
@@ -113,7 +120,7 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
 
         dong = get_val('umdNm')
         jibun = get_val('jibun')
-        offi_name = get_val('offiNm')
+        offi_name = get_val('offiNm', '이름미상')
         floor = get_val('floor')
         floor_str = f"{floor}층" if floor else "층수미상"
         build_year = get_val('buildYear')
@@ -177,9 +184,10 @@ def save_officetel_trade_data_to_txt() -> None:
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
+    filedate = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 위의 동적 날짜 사용)
 
-    officetel_data = get_all_officetel_trade_data(ym) + get_all_officetel_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
-    
+    # officetel_data = get_all_officetel_trade_data(ym) + get_all_officetel_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    officetel_data = get_all_officetel_trade_data("202401") + get_all_officetel_trade_data("202402") + get_all_officetel_trade_data("202403") + get_all_officetel_trade_data("202404") + get_all_officetel_trade_data("202405") + get_all_officetel_trade_data("202406") + get_all_officetel_trade_data("202407") + get_all_officetel_trade_data("202408") + get_all_officetel_trade_data("202409") + get_all_officetel_trade_data("202410") + get_all_officetel_trade_data("202411") + get_all_officetel_trade_data("202412")
     print(f"=== 이번달과 지난달 오피스텔 매매 거래 데이터 총 {len(officetel_data)}건 수집됨. ===")
 
     if not officetel_data:
@@ -276,6 +284,7 @@ def get_all_officetel_rent_data(ym: str) -> list[dict]:
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     sgg_dict = region.get_all_sgg_code_dict()
     total_regions = len(sgg_dict)
+    base_delay = 1.0  # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_code) in enumerate(sgg_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 오피스텔 전월세 거래 데이터 수집 중...")
@@ -286,6 +295,10 @@ def get_all_officetel_rent_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 마지막 시도가 아니면 지연 후 재시도
+                    delay = base_delay * (2 ** attempt)  # 지수적 백오프
+                    print(f"  -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
@@ -327,7 +340,7 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
         sgg = get_val('sggNm')
         dongf = f"{sgg} {dong}"
         jibun = get_val('jibun')
-        offi_name = get_val('offiNm')
+        offi_name = get_val('offiNm', '건물이름미상')
         floor = get_val('floor')
         floor_str = f"{floor}층" if floor else "층수미상"
         build_year = get_val('buildYear')
@@ -436,9 +449,9 @@ def save_officetel_rent_data_to_txt() -> None:
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
-
-    officetel_rent_data = get_all_officetel_rent_data(ym) + get_all_officetel_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
-    
+    filedate = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 위의 동적 날짜 사용)
+    # officetel_rent_data = get_all_officetel_rent_data(ym) + get_all_officetel_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    officetel_rent_data = get_all_officetel_rent_data("202401") + get_all_officetel_rent_data("202402") + get_all_officetel_rent_data("202403") + get_all_officetel_rent_data("202404") + get_all_officetel_rent_data("202405") + get_all_officetel_rent_data("202406") + get_all_officetel_rent_data("202407") + get_all_officetel_rent_data("202408") + get_all_officetel_rent_data("202409") + get_all_officetel_rent_data("202410") + get_all_officetel_rent_data("202411") + get_all_officetel_rent_data("202412")
     print(f"=== 이번달과 지난달 오피스텔 전월세 거래 데이터 총 {len(officetel_rent_data)}건 수집됨. ===")
 
     if not officetel_rent_data:

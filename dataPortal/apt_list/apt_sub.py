@@ -57,7 +57,7 @@ def apt_trade_data(lawd_cd: str, deal_ymd: str) -> pd.DataFrame:
             valid_key_columns = [col for col in KEY_COLUMNS if col in df.columns]
 
             if valid_key_columns:
-                df.dropna(subset=valid_key_columns, how='all', inplace=True)
+                df.dropna(subset=valid_key_columns, how='any', inplace=True) # 핵심 컬럼 중 하나라도 NaN인 행 제거
             else:
                 print(f"경고: DataFrame에 핵심 컬럼({KEY_COLUMNS})이 없습니다. API 응답 필드명을 확인하세요.")
             # 7. 최종 DataFrame 반환
@@ -289,6 +289,7 @@ def get_all_apt_rent_data(ym: str) -> list[dict]:
     
     region_dict = region.get_all_sgg_code_dict()
     total_regions = len(region_dict)
+    base_delay = 1.0  # 재시도 시 기본 지연 시간 (초)
     
     for i, (region_name, lawd_cd) in enumerate(region_dict.items()):
         
@@ -300,6 +301,10 @@ def get_all_apt_rent_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 마지막 시도가 아니면 지연 후 재시도
+                    delay = base_delay * (2 ** attempt)  # 지수적 백오프
+                    print(f"  -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
                     continue
@@ -354,7 +359,7 @@ def return_apt_rent_string(data: list[dict]) -> list[dict]:
 
             dong = get_val('umdNm')
             jibun = get_val('jibun')
-            apt_name = get_val('aptNm')
+            apt_name = get_val('aptNm', '아파트명미상')
             floor = get_val('floor')
             floor_str = f"{floor}층" if floor else "층수미상"
             build_year = get_val('buildYear')

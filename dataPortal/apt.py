@@ -17,11 +17,13 @@ def save_apt_data_to_txt() -> None:
     ym = f"{year}{month:02d}"
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
 
-    df1 = apt_sub.get_all_apt_trade_data(ym)
-    df2 = apt_sub.get_all_apt_trade_data(prev_ym)
+    # df1 = apt_sub.get_all_apt_trade_data(ym)
+    # df2 = apt_sub.get_all_apt_trade_data(prev_ym)
 
-    total_df = pd.concat([df1, df2], ignore_index=True)
+    # total_df = pd.concat([df1, df2], ignore_index=True)
 
+    # total_df = apt_sub.get_all_apt_trade_data("202501") + apt_sub.get_all_apt_trade_data("202502") + apt_sub.get_all_apt_trade_data("202503") + apt_sub.get_all_apt_trade_data("202504") + apt_sub.get_all_apt_trade_data("202505") + apt_sub.get_all_apt_trade_data("202506") + apt_sub.get_all_apt_trade_data("202507") + apt_sub.get_all_apt_trade_data("202508") + apt_sub.get_all_apt_trade_data("202509") + apt_sub.get_all_apt_trade_data("202510") + apt_sub.get_all_apt_trade_data("202511") + apt_sub.get_all_apt_trade_data("202512")
+    total_df = pd.concat([pd.DataFrame(apt_sub.get_all_apt_trade_data("202401")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202402")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202403")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202404")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202405")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202406")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202407")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202408")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202409")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202410")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202411")), pd.DataFrame(apt_sub.get_all_apt_trade_data("202412"))], ignore_index=True)
     print(f"=== 이번달과 지난달에 조회된 아파트 매매 거래 데이터 총 {len(total_df)}건 수집됨. ===")
 
     if total_df.empty:
@@ -54,6 +56,7 @@ def save_apt_data_to_txt() -> None:
         return
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
+    filedate = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 위의 동적 날짜 사용)
     filename = f"txts/apt_real_estate/apt_data_{filedate}.txt" # 파일명 설정 -> real_estate/apt_documents_YYYYMMDD.txt
     with open(filename, 'w', encoding='utf-8') as f:
         for text in (filtered_list):
@@ -70,8 +73,8 @@ def save_apt_rent_data_to_txt():
     ym = f"{year}{month:02d}"
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
     date = f"{year}{month:02d}{now.day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
-    rent_data = apt_sub.get_all_apt_rent_data(ym) + apt_sub.get_all_apt_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
-
+    # rent_data = apt_sub.get_all_apt_rent_data(ym) + apt_sub.get_all_apt_rent_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    rent_data = apt_sub.get_all_apt_rent_data("202401") + apt_sub.get_all_apt_rent_data("202402") + apt_sub.get_all_apt_rent_data("202403") + apt_sub.get_all_apt_rent_data("202404") + apt_sub.get_all_apt_rent_data("202405") + apt_sub.get_all_apt_rent_data("202406") + apt_sub.get_all_apt_rent_data("202407") + apt_sub.get_all_apt_rent_data("202408") + apt_sub.get_all_apt_rent_data("202409") + apt_sub.get_all_apt_rent_data("202410") + apt_sub.get_all_apt_rent_data("202411") + apt_sub.get_all_apt_rent_data("202412")
     print(f"=== 이번달과 지난달에 조회된 아파트 전월세 거래 데이터 총 {len(rent_data)}건 수집됨. ===")
 
     if not rent_data:
@@ -105,6 +108,7 @@ def save_apt_rent_data_to_txt():
         return
     
     # 파일 저장
+    date = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 동적 날짜 사용)
     filename = f"txts/apt_real_estate/apt_rent_data_{date}.txt"
     with open(filename, 'w', encoding='utf-8') as f:
         for rent in (filtered_list):
@@ -157,4 +161,4 @@ if __name__ == "__main__":
 
     # 방법 2 : Document 텍스트 파일로 저장 스케줄링
     save_apt_data_to_txt()
-    # save_apt_rent_data_to_txt()
+    save_apt_rent_data_to_txt()

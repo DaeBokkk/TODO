@@ -1,5 +1,6 @@
 # 연립다세대 매매/전월세 데이터 수집 모듈 
 
+import time
 import requests
 import xmltodict
 from dataPortal import region
@@ -67,6 +68,7 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     region_dict = region.get_all_sgg_code_dict()
     total_regions = len(region_dict)
+    base_delay = 1.0  # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_cd) in enumerate(region_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 연립다세대 매매 데이터 수집 중...")
@@ -77,6 +79,10 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 마지막 시도가 아니면 지연 후 재시도
+                    delay = base_delay * (2 ** attempt)  # 지수적 백오프
+                    print(f"  -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
@@ -203,9 +209,10 @@ def save_rh_trade_data_to_txt() -> None:
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
     
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
+    filedate = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 위의 동적 날짜 사용)
     # 데이터 수집
-    all_rh_data = get_all_rh_trade_data(ym=ym) + get_all_rh_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
-
+    # all_rh_data = get_all_rh_trade_data(ym=ym) + get_all_rh_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    all_rh_data = get_all_rh_trade_data("202401") + get_all_rh_trade_data("202402") + get_all_rh_trade_data("202403") + get_all_rh_trade_data("202404") + get_all_rh_trade_data("202405") + get_all_rh_trade_data("202406") + get_all_rh_trade_data("202407") + get_all_rh_trade_data("202408") + get_all_rh_trade_data("202409") + get_all_rh_trade_data("202410") + get_all_rh_trade_data("202411") + get_all_rh_trade_data("202412")
     print(f"=== 이번달과 지난달 연립다세대 매매 거래 데이터 총 {len(all_rh_data)}건 수집됨. ===")
 
     if not all_rh_data:
@@ -308,6 +315,7 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
     
     region_dict = region.get_all_sgg_code_dict()
     total_regions = len(region_dict)
+    base_delay = 1.0  # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_code) in enumerate(region_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 연립다세대 전월세 실거래가 데이터 수집 중...")
@@ -318,6 +326,10 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 마지막 시도가 아니면 지연 후 재시도
+                    delay = base_delay * (2 ** attempt)  # 지수적 백오프
+                    print(f"  -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
@@ -465,9 +477,10 @@ def save_rh_rent_data_to_txt() -> None:
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
+    filedate = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 위의 동적 날짜 사용)
     # 데이터 수집
-    all_rh_rent_data = get_all_rh_rent_data(ym=ym) + get_all_rh_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
-
+    # all_rh_rent_data = get_all_rh_rent_data(ym=ym) + get_all_rh_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    all_rh_rent_data = get_all_rh_rent_data("202401") + get_all_rh_rent_data("202402") + get_all_rh_rent_data("202403") + get_all_rh_rent_data("202404") + get_all_rh_rent_data("202405") + get_all_rh_rent_data("202406") + get_all_rh_rent_data("202407") + get_all_rh_rent_data("202408") + get_all_rh_rent_data("202409") + get_all_rh_rent_data("202410") + get_all_rh_rent_data("202411") + get_all_rh_rent_data("202412")
     print(f"=== 이번달과 지난달 연립다세대 전월세 거래 데이터 총 {len(all_rh_rent_data)}건 수집됨. ===")
 
     if not all_rh_rent_data:

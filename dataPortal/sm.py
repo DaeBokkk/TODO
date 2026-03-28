@@ -8,6 +8,7 @@ import datetime
 from dataPortal import region
 import json
 import glob
+import time
 # 초기화
 dotenv.load_dotenv()
 DATAGO_KEY = os.getenv("DATAGO_KEY")
@@ -68,6 +69,7 @@ def get_all_sm_trade_data(ym: str) -> list[dict]:
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     sgg_code_dict = region.get_all_sgg_code_dict()
     total_regions = len(sgg_code_dict)
+    base_delay = 1.0  # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_cd) in enumerate(sgg_code_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 단독/다가구 매매 데이터 수집 중...")
@@ -77,7 +79,10 @@ def get_all_sm_trade_data(ym: str) -> list[dict]:
                 all_sm_data.extend(sm_data)
                 break  # 성공 시 루프 탈출
             except Exception as e:
-                print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 마지막 시도가 아니면 지연 후 재시도
+                    delay = base_delay * (2 ** attempt)  # 지수적 백오프
+                    print(f"  -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
                 continue
@@ -184,8 +189,8 @@ def save_sm_trade_data_to_txt() -> None:
     ym = f"{year}{month:02d}"
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
 
-    total_df: list[dict] = get_all_sm_trade_data(ym) + get_all_sm_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
-    
+    # total_df: list[dict] = get_all_sm_trade_data(ym) + get_all_sm_trade_data(prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    total_df: list[dict] = get_all_sm_trade_data("202401") + get_all_sm_trade_data("202402") + get_all_sm_trade_data("202403") + get_all_sm_trade_data("202404") + get_all_sm_trade_data("202405") + get_all_sm_trade_data("202406") + get_all_sm_trade_data("202407") + get_all_sm_trade_data("202408") + get_all_sm_trade_data("202409") + get_all_sm_trade_data("202410") + get_all_sm_trade_data("202411") + get_all_sm_trade_data("202412")
     print(f"=== 이번달과 지난달 단독/다가구 매매 거래 데이터 총 {len(total_df)}건 수집됨. ===")
 
     if not total_df:
@@ -219,6 +224,7 @@ def save_sm_trade_data_to_txt() -> None:
         return
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
+    filedate = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 위의 동적 날짜 사용)
     filename = f"txts/sm_real_estate/sm_data_{filedate}.txt" # 파일명 설정 -> real_estate/sm_documents_YYYYMMDD.txt
 
     with open(filename, 'w', encoding='utf-8') as f:
@@ -283,6 +289,7 @@ def get_all_sm_rent_data(ym: str) -> list[dict]:
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     sgg_code_dict = region.get_all_sgg_code_dict()
     total_regions = len(sgg_code_dict)
+    base_delay = 1.0  # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_cd) in enumerate(sgg_code_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 단독/다가구 전월세 데이터 수집 중...")
@@ -292,7 +299,10 @@ def get_all_sm_rent_data(ym: str) -> list[dict]:
                 all_sm_rent_data.extend(sm_rent_data)
                 break  # 성공 시 루프 탈출
             except Exception as e:
-                print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 마지막 시도가 아니면 지연 후 재시도
+                    delay = base_delay * (2 ** attempt)  # 지수적 백오프
+                    print(f"  -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
                 continue
@@ -432,8 +442,8 @@ def save_sm_rent_data_to_txt() -> None:
     ym = f"{year}{month:02d}"
     prev_ym = f"{year}{month-1:02d}" if month > 1 else f"{year-1}12"
 
-    total_df: list[dict] = get_all_sm_rent_data(ym=ym) + get_all_sm_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
-    
+    # total_df: list[dict] = get_all_sm_rent_data(ym=ym) + get_all_sm_rent_data(ym=prev_ym) # 이번달과 지난달 데이터 모두 수집하여 병합
+    total_df: list[dict] = get_all_sm_rent_data("202401") + get_all_sm_rent_data("202402") + get_all_sm_rent_data("202403") + get_all_sm_rent_data("202404") + get_all_sm_rent_data("202405") + get_all_sm_rent_data("202406") + get_all_sm_rent_data("202407") + get_all_sm_rent_data("202408") + get_all_sm_rent_data("202409") + get_all_sm_rent_data("202410") + get_all_sm_rent_data("202411") + get_all_sm_rent_data("202412")
     print(f"=== 이번달과 지난달 단독/다가구 전월세 거래 데이터 총 {len(total_df)}건 수집됨. ===")
 
     if not total_df:
@@ -468,6 +478,7 @@ def save_sm_rent_data_to_txt() -> None:
         return
 
     filedate = f"{year}{month:02d}{day:02d}" # 파일명에 사용할 날짜 문자열 설정 -> YYYYMMDD
+    filedate = "20240101" # 테스트용으로 고정된 날짜 사용 (실제 운영 시에는 위의 동적 날짜 사용)
     filename = f"txts/sm_real_estate/sm_rent_data_{filedate}.txt" # 파일명 설정 -> real_estate/sm_rent_documents_YYYYMMDD.txt
 
     os.makedirs(os.path.dirname(filename), exist_ok=True) # 디렉토리 없으면 생성
