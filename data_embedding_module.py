@@ -126,7 +126,7 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
                 custom_id
             ) VALUES (%s, %s, %s, %s, %s, %s)
         """
-
+        
         success_count = 0
         for i, doc in enumerate(documents):
             # [UUID] DB의 PK용 표준 UUID 생성 (필수)
