@@ -8,6 +8,7 @@ import datetime
 from dataPortal import region
 import json
 import glob
+import time
 # 초기화
 dotenv.load_dotenv()
 DATAGO_KEY = os.getenv("DATAGO_KEY")
@@ -67,6 +68,7 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
 
     region_dict = region.get_all_sgg_code_dict()
     total_regions = len(region_dict)
+    base_delay_seconds = 1.0 # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_cd) in enumerate(region_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 토지 매매 데이터 수집 중...")
@@ -77,6 +79,10 @@ def get_all_land_trade_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 재시도할 경우에만 지연
+                    delay = base_delay_seconds * (2 ** attempt)  # 지연 시간 증가 (1s, 2s)
+                    print(f"    -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"    -> {region_name} 지역 데이터 수집 실패. 다음 지역으로 넘어갑니다.")
     

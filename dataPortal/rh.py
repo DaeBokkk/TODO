@@ -1,5 +1,6 @@
 # 연립다세대 매매/전월세 데이터 수집 모듈 
 
+import time
 import requests
 import xmltodict
 from dataPortal import region
@@ -67,6 +68,7 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
     # 전국 '시/군/구' 법정동 코드 딕셔너리 조회
     region_dict = region.get_all_sgg_code_dict()
     total_regions = len(region_dict)
+    base_delay_seconds = 1.0 # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_cd) in enumerate(region_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_cd}) 연립다세대 매매 데이터 수집 중...")
@@ -77,6 +79,10 @@ def get_all_rh_trade_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_cd}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 재시도할 경우에만 지연
+                    delay = base_delay_seconds * (2 ** attempt)  # 지연 시간 증가 (1s, 2s)
+                    print(f"    -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
@@ -308,6 +314,7 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
     
     region_dict = region.get_all_sgg_code_dict()
     total_regions = len(region_dict)
+    base_delay_seconds = 1.0 # 재시도 시 기본 지연 시간 (초)
 
     for i, (region_name, lawd_code) in enumerate(region_dict.items()):
         print(f" - [{i+1}/{total_regions}] {region_name} ({lawd_code}) 연립다세대 전월세 실거래가 데이터 수집 중...")
@@ -318,6 +325,10 @@ def get_all_rh_rent_data(ym: str) -> list[dict]:
                 break  # 성공 시 루프 탈출
             except Exception as e:
                 print(f"오류 발생 [{region_name} - {lawd_code}] (시도 {attempt+1}/3): {e}")
+                if attempt < 2:  # 재시도할 경우에만 지연
+                    delay = base_delay_seconds * (2 ** attempt)  # 지연 시간 증가 (1s, 2s)
+                    print(f"    -> {delay}초 후 재시도... ({attempt + 1}/3)")
+                    time.sleep(delay)
                 if attempt == 2:  # 마지막 시도에서도 실패한 경우
                     print(f"  -> {region_name} 지역 데이터 수집 실패 (오류: {e}). 다음 지역으로 넘어갑니다.")
     
