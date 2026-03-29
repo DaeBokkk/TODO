@@ -120,10 +120,10 @@ def return_officetel_string(data: list[dict]) -> list[dict]:
 
         dong = get_val('umdNm')
         jibun = get_val('jibun')
-        offi_name = get_val('offiNm')
-        floor = get_val('floor')
+        offi_name = get_val('offiNm', '건물명 미상')
+        floor = get_val('floor', '층수 미상')
         floor_str = f"{floor}층" if floor else "층수미상"
-        build_year = get_val('buildYear')
+        build_year = get_val('buildYear', '정보없음')
         deal_amount = fmt_money(get_val('dealAmount', '0'))
         
         # --- 4. 면적 (평수 환산 포함) ---
@@ -339,10 +339,10 @@ def return_officetel_rent_string(data: list[dict]) -> list[dict]:
         sgg = get_val('sggNm')
         dongf = f"{sgg} {dong}"
         jibun = get_val('jibun')
-        offi_name = get_val('offiNm')
-        floor = get_val('floor')
+        offi_name = get_val('offiNm', '건물명 미상')
+        floor = get_val('floor', '층수 미상')
         floor_str = f"{floor}층" if floor else "층수미상"
-        build_year = get_val('buildYear')
+        build_year = get_val('buildYear', '정보없음')
 
         # --- 3. 전/월세 금액 처리 ---
         dep_raw = get_val('deposit', '0')
