@@ -154,13 +154,3 @@ if __name__ == "__main__":
             print(f"enactment_date: {chunk.metadata.get('contract_date')}")
             print(f"region_code: {chunk.metadata.get('region_code')}")
             print(f"Content: {chunk.page_content[:]}...") # 앞 100자만 출력
-
-
-            #  query{
-            #     main_intent : 질문의도
-            #     location : 위치
-            #     complex_name  : 아파트 단지명
-            #     property_type : 부동산 속성 (오피,아파트)
-            #     price_metric : 가격
-            #     period : 조회기간
-            # }
