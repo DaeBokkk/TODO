@@ -1,16 +1,30 @@
-# 1. 파이썬 컴파일 파일 (불필요)
-__pycache__/
-*.pyc
-
-# 2. 가상환경 폴더 (용량이 커서 Git에 올리면 안 됨)
-rag_env/
-venv/
-env/
-.venv/
-
-# 3. VS Code 설정 폴더 (내 컴퓨터 설정이 남에게 가면 안 됨)
-.vscode/
-
-# 4. 환경변수/비밀번호 파일 (절대 올리면 안 됨!!!)
+# === 보안 및 개인 설정 파일 (CRITICAL) ===
 .env
-keys.json
+*.pem
+TODO_RAG_KEY.pem
+.vscode/
+ngrok.exe
+
+# === 파이썬 컴파일 및 캐시 파일 ===
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+tests/**/__pycache__/
+core/__pycache__/
+
+# === 운영체제 임시 파일 ===
+.DS_Store
+Thumbs.db
+
+# === 로그 파일 ===
+*.log
+server_final.log
+
+# === 가상환경 (사용 시 대비) ===
+venv/
+.venv/
+env/
+
+TODO/.env
+TODO/ngrok.exe
