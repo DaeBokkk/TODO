@@ -184,8 +184,12 @@ def run_full_automation(embeddings: Embeddings):
     # 프로그램이 실행되는 '오늘' 날짜를 YYYYMMDD 형태로 가져온다.
     today_str = datetime.now().strftime("%Y%m%d")
     
+    # target_patterns = [
+    #     f"**/**/*{today_str}*.txt"
+    # ]
+
     target_patterns = [
-        f"**/**/*{today_str}*.txt"
+        f"**/**/**.txt"
     ]
 
     print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
