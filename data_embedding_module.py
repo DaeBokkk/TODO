@@ -184,12 +184,8 @@ def run_full_automation(embeddings: Embeddings):
     # 프로그램이 실행되는 '오늘' 날짜를 YYYYMMDD 형태로 가져온다.
     today_str = datetime.now().strftime("%Y%m%d")
     
-    # target_patterns = [
-    #     f"**/**/*{today_str}*.txt"
-    # ]
-
     target_patterns = [
-        f"**/**/**.txt"
+        f"**/**/*{today_str}*.txt"
     ]
 
     print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
@@ -199,7 +195,7 @@ def run_full_automation(embeddings: Embeddings):
     for pattern in target_patterns:
         # 패턴에 맞는 파일 찾기 (오늘 날짜 파일만 검색돼요)
         files = sorted(glob.glob(pattern))
-        
+
         if not files:
             continue
 
@@ -235,9 +231,57 @@ def run_full_automation(embeddings: Embeddings):
 
     print(f"\n✅ [완료] 총 {total_files}개의 금일 파일 처리가 끝났어요.")
 
+# ------------------------------------------------------------------------------
+# 5. [신규] 단일 파일 전용 실행 로직
+# ------------------------------------------------------------------------------
+def run_single_file_embedding(target_filename: str, embeddings: Embeddings):
+    """
+    지정된 파일명만 정확하게 타겟팅하여(하위 폴더 포함 탐색) 임베딩 및 적재를 수행합니다.
+    """
+    print(f"\n🚀 [Single File Mode] 단일 파일 탐색 시작: {target_filename}")
+
+    # [핵심 수정] 하위 폴더 어디에 있든 해당 이름의 파일을 찾습니다.
+    search_pattern = f"**/{target_filename}"
+    found_files = glob.glob(search_pattern, recursive=True)
+
+    if not found_files:
+        print(f"❌ [Error] 파일을 찾을 수 없습니다. (하위 폴더 탐색 실패): {target_filename}")
+        return
+        
+    # 찾은 파일의 실제 경로를 가져옵니다.
+    file_path = found_files[0]
+    print(f"📂 [파일 발견] 실제 경로: {file_path}")
+
+    try:
+        # (1) 파일 로드 및 청킹
+        raw_data = load_raw_jsonl_file(file_path)
+        chunks = create_and_chunk_documents(raw_data)
+        
+        # (2) [안전장치] DB 함수 호출 전, ID 누락 검사 및 보정
+        fixed_count = 0
+        for doc in chunks:
+            current_id = doc.metadata.get("rdb_id") or doc.metadata.get("id")
+            if not current_id:
+                doc.metadata["rdb_id"] = f"AUTO_{uuid.uuid4().hex[:8]}"
+                fixed_count += 1
+        
+        if fixed_count > 0:
+            print(f"   ⚠️ [Safety] ID가 없는 {fixed_count}개 데이터에 임시 ID를 발급했습니다.")
+
+        # (3) DB 적재 함수 호출
+        save_to_specific_table(chunks, embeddings)
+        
+        print(f"\n✅ [완료] 파일 처리가 성공적으로 끝났습니다.")
+        
+    except Exception as e:
+        print(f"❌ [Error] 파일 처리 실패: {e}")
+
+
+
+
 
 # ------------------------------------------------------------------------------
-# 5. 메인 실행부
+# 6. 메인 실행부
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     # 1. 모델 로드
@@ -245,3 +289,9 @@ if __name__ == "__main__":
 
     # 2. 자동화 시스템 가동
     run_full_automation(model)
+
+# 1. 처리하고 싶은 파일의 경로를 여기에 직접 입력.
+    TARGET_FILE_PATH = "bitkinds_news_20260319.txt"
+
+    # 3. 단일 파일 적재 시스템 가동
+    # run_single_file_embedding(TARGET_FILE_PATH, model)
