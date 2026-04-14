@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     TEMPERATURE: float = 0.1
     MAX_TOKENS: int = 512
     
-    # [추가됨] 프롬프트 버전 관리 (이게 빠져서 오류가 났었습니다!)
     # 설계서 반영
     PROMPT_VERSION: str = "v1"
 

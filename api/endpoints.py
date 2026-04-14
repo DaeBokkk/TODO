@@ -1,35 +1,42 @@
 from fastapi import APIRouter, HTTPException
 from schemas.chat import ChatRequest, ChatResponse
 
-# [중요] 실제 구현한 LLM 호출 엔진을 가져옴.
-from core.gateway.adapters import llama_engine
+# 모듈들을 모두 불러옴
+from modules.preprocessing.extractor import field_extractor  # 질문 분석기
+from core.retrieval.service import search_client           # 데이터 수집기
+from core.gateway.adapters import gemini_engine            # 다정한 AI 엔진
 
 router = APIRouter()
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
-    # 1. 모델 선택 로직 (나중에 GPT/Gemini 분기 처리 가능)
-    if request.model_name == "llama-3-8b":
-        # Llama 3용 프롬프트 포맷 적용 (이게 없으면 횡설수설할 수 있음)
-        formatted_prompt = (
-            f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
-            f"{request.query}<|eot_id|>"
-            f"<|start_header_id|>assistant<|end_header_id|>\n\n"
-        )
+    try:
+        user_query = request.query
         
-        # 2. 생성 (LlamaAdapter의 generate 메서드 호출)
-        # invoke는 동기 함수이므로, CPU 부하가 큼. 
-        # 간단한 구현을 위해 여기서는 직접 호출하지만 운영 환경에서는 run_in_threadpool 등을 고려해야 함.
-        answer = llama_engine.generate(formatted_prompt)
+        # [1단계] 분석: 질문에서 키워드 추출 (extractor.py)
+        extracted_payload = field_extractor.extract(user_query)
+        
+        # [2단계] 검색: aws 서버에서 데이터 확보 (service.py)
+        # 추출된 JSON 데이터를 통째로 전달하여 검색함
+        context_text = search_client.fetch_real_estate_data(user_query) 
+        
+        # [3단계] 생성: 다정한 말투로 답변 (adapters.py)
+        prompt = f"""
+옆에 계신 고객님께 조근조근 설명해드리는 전문가가 되어주세요.
+
+[관련 실거래 자료]
+{context_text}
+
+[사용자 질문]
+{user_query}
+"""
+        answer = gemini_engine.generate(prompt)
         
         return ChatResponse(
             answer=answer,
-            model_used="llama-3-8b-local"
+            model_used="gemini-3.1-pro-preview"
         )
 
-    else:
-        # GPT나 다른 모델 로직 (추후 구현)
-        return ChatResponse(
-            answer="아직 지원되지 않는 모델입니다. model_name을 'llama-3-8b'로 설정해주세요.",
-            model_used=request.model_name
-        )
+    except Exception as e:
+        print(f"❌ 배포 서버 에러: {str(e)}")
+        raise HTTPException(status_code=500, detail="서버 내부 문제로 답변이 어렵네요.")

@@ -1,74 +1,105 @@
 import requests
 import json
+import os
+import sys
 
-# [중요] 멤버 B 서버 주소
-MEMBER_B_API_URL = "https://subinternal-decompressive-gunner.ngrok-free.dev/hybrid_search"
+# [1] Gemini 엔진 가져오기
+try:
+    from core.gateway.adapters import gemini_engine
+except ImportError:
+    print("❌ [오류] 'core/gateway/adapters.py'를 찾을 수 없습니다.")
+    sys.exit(1)
 
-class RemoteRetriever:
-    def search(self, query_frame: dict, user_query: str) -> str:
+# [2] 검색 서버 설정 (최신 주소 반영)
+SEARCH_SERVER_URL = "http://3.39.23.25:8000/hybrid_search"
+
+class SearchClient:
+    """
+    AWS 검색 서버와 통신하여 실거래 데이터를 수집하는 역할을 수행함.
+    """
+    def __init__(self):
+        self.search_url = SEARCH_SERVER_URL
+
+    def fetch_real_estate_data(self, user_query: str) -> str:
         """
-        팀장님의 6개 필드를 매핑 없이 그대로 전송합니다.
+        사용자 질문을 검색 서버에 전달하고 결과를 텍스트 형식으로 반환함.
         """
-        print(f"\n📡 [연결] 멤버 B({MEMBER_B_API_URL})에게 데이터 전송 중...")
-        
-        # 1. query 구성
-        # 딕셔너리 언패킹(**)을 사용하여 팀장님의 필드(location, property_type 등)를 그대로 넣습니다.
-        query = {
-            "query": user_query,          # 원본 질문
-            **query_frame,                # [핵심] 파싱된 6개 필드 그대로 전송 (location 등)
-        }
-        
-        print(f"📦 [전송 데이터] {json.dumps(query, ensure_ascii=False)}")
-        
+        context_text = ""
         try:
-            # 2. 전송
-            response = requests.post(MEMBER_B_API_URL, json=query, timeout=20)
+            payload = {"query": user_query}
+            response = requests.post(self.search_url, json=payload, timeout=20)
             
-            # 3. 응답 처리
             if response.status_code == 200:
                 results = response.json()
-                
-                # [디버깅 로그] 멤버 B가 뭘 보냈는지 눈으로 확인!
-                print(f"📥 [수신 데이터 확인] 타입: {type(results)}")
-                # print(f"📥 [수신 데이터 내용] {results}") # 내용이 너무 길면 주석 처리
-                
-                context = ""
-                
-                # Case A: 리스트인 경우
+                # 데이터 형식에 따른 파싱 처리
                 if isinstance(results, list):
-                    if not results: # 빈 리스트면
-                        context = "검색 결과가 없습니다."
-                    
-                    # A-1: 문자열 리스트 ["내용1", "내용2"] 인 경우 (여기서 에러 났었음!)
-                    elif isinstance(results[0], str):
-                        context = "\n\n".join(results)
-                    
-                    # A-2: 딕셔너리 리스트 [{"content":...}, {"content":...}] 인 경우 (원래 약속)
-                    elif isinstance(results[0], dict):
-                        context = "\n\n".join([item.get("content", str(item)) for item in results])
-                    
-                    # A-3: 기타 (그냥 문자열로 변환)
-                    else:
-                        context = str(results)
-
-                # Case B: 딕셔너리인 경우 ({"context": "..."})
+                    context_text = "\n".join([str(item) for item in results])
                 elif isinstance(results, dict):
-                    context = results.get("context") or results.get("answer") or str(results)
-                
-                # Case C: 기타
+                    context_text = results.get("results", str(results))
                 else:
-                    context = str(results)
-                    
-                print(f"✅ [성공] 문서 {len(context)}자 확보!")
-                return context
-            
+                    context_text = str(results)
             else:
-                print(f"❌ [실패] 서버 에러: {response.status_code} - {response.text}")
-                return "검색 서버 오류가 발생했습니다."
-                
+                context_text = "관련 자료 없음"
         except Exception as e:
-            print(f"❌ [연결 실패] {e}")
-            return "검색 서버에 연결할 수 없습니다."
+            print(f"\n❌ [연결 오류] 검색 서버 접속 실패: {e}")
+            context_text = "서버 연결 실패로 인해 자료 확보 불가"
+            
+        return context_text
 
-# 전역 인스턴스 생성
-retrieval_service = RemoteRetriever()
+# 다른 파일에서 불러다 쓸 수 있도록 객체 생성
+search_client = SearchClient()
+
+def run_hybrid_rag_system():
+    """
+    CLI 환경에서 검색과 생성을 통합 테스트하는 루프를 실행함.
+    """
+    print("\n" + "="*70)
+    print("🚀 [최종 통합] 원격 검색(AWS) + 로컬 생성(Gemini) 시스템")
+    print(f"📡 검색 서버: {SEARCH_SERVER_URL}")
+    print("="*70)
+
+    while True:
+        user_query = input("\n👤 질문: ").strip()
+        if not user_query: continue
+        if user_query.lower() in ['q', 'quit', 'exit']:
+            print("👋 시스템을 종료합니다.")
+            break
+
+        print(f"   🔍 AWS 서버에서 자료를 검색하고 있습니다...", end="", flush=True)
+
+        # 서치 클라이언트를 사용하여 데이터 확보
+        context_text = search_client.fetch_real_estate_data(user_query)
+        print("\r", end="")
+
+        if "자료 확보 불가" not in context_text:
+            print(f"📚 [검색 완료] 참고 자료 확보 ({len(context_text)}자)")
+        
+        print(f"   🤖 Gemini가 답변을 생성 중입니다...", end="", flush=True)
+        
+        try:
+            # 다정한 페르소나를 반영한 프롬프트 구성
+            final_prompt = f"""
+옆에 있는 고객에게 친절하게 설명해주는 '부동산 전문가'가 되어 답변해주세요.
+
+[검색 자료]
+{context_text}
+
+[질문]
+{user_query}
+
+[지침]
+- "~해요", "~이네요" 같은 부드러운 말투를 사용하세요.
+- 중요한 가격 정보는 **볼드체**로 강조하세요.
+- 자료가 없으면 정중하게 양해를 구하세요.
+"""
+            final_answer = gemini_engine.generate(final_prompt)
+            print("\r", end="") 
+            
+            print(f"\n🤖 AI 답변:\n{final_answer}")
+            print("-" * 60)
+
+        except Exception as e:
+            print(f"\n❌ [생성 오류] Gemini 에러: {e}")
+
+if __name__ == "__main__":
+    run_hybrid_rag_system()

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from schemas.gateway import PreprocessRequest, PreprocessedResponse, AnswerResponse
+from schemas.gateway import PreprocessRequest, PreprocessedResponse, AnswerResponse, GenerateRequest
+
 
 # [모듈 로딩]
 from modules.preprocessing.extractor import field_extractor 
@@ -122,8 +123,8 @@ async def chat_pipeline(request: PreprocessRequest):
         print(f"📚 [검색 완료] 문서 길이: {len(retrieved_context)}자")
         # print(f"👀 [Context 내용 미리보기]:\n{retrieved_context[:200]}...") 
 
-        # 🚨 [추가된 안전장치] 검색이 실패했거나 내용이 너무 짧으면 AI 생성 차단!
-        # 멤버 B 서버가 500 에러를 냈거나 데이터가 없을 때 환각 방지
+        # 검색이 실패했거나 내용이 너무 짧으면 AI 생성 차단
+        # aws 서버가 500 에러를 냈거나 데이터가 없을 때 환각 방지
         if "오류" in retrieved_context or "실패" in retrieved_context or len(retrieved_context) < 50:
             print("🛑 [중단] 검색 실패/오류로 인해 AI 생성을 차단합니다.")
             
@@ -162,4 +163,38 @@ async def chat_pipeline(request: PreprocessRequest):
 
     except Exception as e:
         print(f"❌ [Pipeline Error] {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/generate", response_model=AnswerResponse)
+async def generate_only(request: GenerateRequest):
+    """
+    [테스트용] 리트리버 없이 Context를 직접 입력받아 답변을 생성합니다.
+    """
+    try:
+        print(f"\n🧪 [Test Generate] 직접 입력된 Context로 생성을 시작합니다.")
+        
+        # 1. 프롬프트 조립
+        final_prompt = prompt_builder.build(
+            query=request.query,
+            context=request.context
+        )
+        
+        # 2. Gemini 호출
+        print("🍳 [Gemini] 답변 생성 중...")
+        answer = llama_engine.generate(final_prompt)
+        
+        # 3. 답변 정제
+        clean_answer = answer.replace("[Answer]", "").strip()
+        
+        print(f"🎉 [완료] 생성 끝")
+
+        return AnswerResponse(
+            answer=clean_answer,
+            sources=["manual_injection"], # 수동 주입 표시
+            confidence=1.0,
+            model=settings.MODEL_NAME
+        )
+
+    except Exception as e:
+        print(f"❌ [Generate Error] {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

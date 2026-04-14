@@ -22,7 +22,6 @@ class PromptBuilder:
         instructions_list = self.template.get("instruction", [])
         instructions = "\n".join([f"- {inst}" for inst in instructions_list])
 
-        # [최종 필살기]
         # 1. System: 역할만 간단히
         # 2. User: 문맥과 질문, 그리고 '답변 형식'을 지정
         # 3. Assistant: [답변]이라는 헤더를 미리 박아서 "이제 답변 쓸 차례야"라고 강제 인식시킴
@@ -43,10 +42,7 @@ class PromptBuilder:
 
 [답변]
 네, 검색된 정보에 따르면"""
-        
-        # ↑ 핵심: "네, 검색된 정보에 따르면" 이라고 우리가 먼저 써줌.
-        # 이제 모델은 이 뒤를 이어서 "평택 효성해링턴..." 하고 팩트를 말할 수밖에 없음.
 
-        return final_prompt # strip 절대 금지 (뒤에 공백 유지)
+        return final_prompt 
 
 prompt_builder = PromptBuilder()
