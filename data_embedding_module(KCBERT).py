@@ -24,8 +24,8 @@ except ImportError:
 # ------------------------------------------------------------------------------
 # DB 정보
 
-# (1) 임베딩 모델 설정 (KO-SBERT)
-MODEL_ID = "jhgan/ko-sbert-nli"
+# (1) 임베딩 모델 설정 (KCBERT로 변경됨)
+MODEL_ID = "beomi/kcbert-base"
 MODEL_DEVICE = "cpu"
 
 # (2) PostgreSQL DB 연결 정보 (Ngrok 정보 반영)
@@ -48,7 +48,7 @@ COLLECTION_NAME = "embedding_vector_ko_sbert" # 사용할 컬렉션 이름
 # ------------------------------------------------------------------------------
 def load_embedding_model() -> Embeddings:
     """
-    KO-SBERT 모델을 메모리에 로드합니다.
+    KCBERT 모델을 메모리에 로드합니다.
     """
     print(f"\n[System] 임베딩 모델 로딩 중... ({MODEL_ID})")
     start = time.time()
