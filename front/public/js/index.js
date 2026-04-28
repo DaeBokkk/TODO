@@ -351,9 +351,9 @@ const STORAGE_KEY = 'propchat_chats_v1';
       
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 180000); // 3분 타임아웃 설정
+          const timeoutId = setTimeout(() => controller.abort(), 3 * 60 * 1000); // 3분 타임아웃 설정
       
-          const response = await fetch('http://192.168.35.130:8000/v1/chat', {
+          const response = await fetch('http://1.228.84.122:8000/v1/chat', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
