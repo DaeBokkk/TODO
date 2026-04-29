@@ -1,27 +1,28 @@
 import time
 import psycopg  # pip install psycopg[binary]
 from typing import Dict, Any, List
+import dotenv
 
 # ------------------------------------------------------------------------------
 # 1. 모듈 및 환경 설정
 # ------------------------------------------------------------------------------
 
 try:
-    from data_embedding_module import load_embedding_model
+    # [수정됨] 이제 전용 로더인 'embedding_loader'에서 유료 모델을 가져옵니다.
+    from embedding_loader import load_embedding_model
 except ImportError:
-    # 모듈이 없을 경우를 대비한 더미 로더
-    from langchain_community.embeddings import HuggingFaceEmbeddings
+    # 모듈이 없을 경우를 대비한 대체 로더 역시 OpenAI로 맞춤
+    from langchain_openai import OpenAIEmbeddings
+    import os
     def load_embedding_model():
-        return HuggingFaceEmbeddings(
-            model_name="jhgan/ko-sbert-nli",
-            model_kwargs={'device': 'cpu'},
-            encode_kwargs={'normalize_embeddings': True}
-        )
+        dotenv.load_dotenv()
+        OPENAI_API_KEY =  os.getenv('Emb_KEY')
+        return OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=OPENAI_API_KEY)
 
 # DB 연결 정보
 DB_INFO = {
-    "host": "0.tcp.jp.ngrok.io",
-    "port": "17339",
+    "host": "3.39.23.25", # [수정됨] ngrok 주소 대신 데이터 적재에 썼던 고정 IP로 통일
+    "port": "5432",
     "user": "rag",
     "password": "rag",
     "dbname": "rag"
@@ -34,10 +35,9 @@ DB_CONN_STRING = f"host={DB_INFO['host']} port={DB_INFO['port']} user={DB_INFO['
 class StandaloneQueryProcessor:
     def __init__(self):
         print("🔄 [Init] 쿼리 프로세서 초기화 중...")
+        # embedding_loader.py의 기본값이 이미 openai-v3이므로 괄호 안은 비워둬도 됨
         self.embedding_model = load_embedding_model()
         print("✅ [Init] 초기화 완료.")
-
-    # [삭제됨] _simple_extract 함수는 이제 필요 없습니다.
 
     def _convert_fields_to_text(self, fields: Dict[str, Any]) -> str:
         """
@@ -52,7 +52,6 @@ class StandaloneQueryProcessor:
         
         return ", ".join(parts) if parts else "부동산 정보 검색"
 
-    # [핵심 수정] 인자명을 user_query(str) -> parsed_query(Dict)로 변경
     def process_and_save(self, parsed_query: Dict[str, Any], user_id: str = "anonymous") -> Dict[str, Any]:
         """
         서버에서 파싱된 쿼리(Dict)를 받아 -> 텍스트 변환 -> 임베딩 -> DB 저장을 수행합니다.
@@ -103,14 +102,14 @@ class StandaloneQueryProcessor:
         try:
             with psycopg.connect(DB_CONN_STRING) as conn:
                 with conn.cursor() as cur:
-                    # 테이블 생성 (없을 시)
+                    # [핵심 수정] OpenAI 모델 차원에 맞게 vector(1536)으로 변경 (기존 768)
                     cur.execute("""
                         CREATE TABLE IF NOT EXISTS user_query (
                             LOG_ID SERIAL PRIMARY KEY,
                             USER_ID VARCHAR(50), RAW_QUERY TEXT,
                             INTENT VARCHAR(50), LOCATION VARCHAR(100), COMPLEX_NAME VARCHAR(100),
                             PROPERTY_TYPE VARCHAR(50), PRICE_METRIC VARCHAR(50), PERIOD VARCHAR(50),
-                            QUERY_VECTOR vector(768), CREATED_AT TIMESTAMP DEFAULT NOW()
+                            QUERY_VECTOR vector(1536), CREATED_AT TIMESTAMP DEFAULT NOW()
                         );
                     """)
                     cur.execute(insert_sql, params)
@@ -133,5 +132,4 @@ if __name__ == "__main__":
         "period": "최근 6개월"
     }
     
-    # 이제 parsed_query 인자를 인식합니다.
     processor.process_and_save(parsed_query=test_payload, user_id="test_user")

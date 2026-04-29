@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from datasets import Dataset
+import dotenv
 
 # RAGAS 핵심 평가 지표 임포트
 from ragas import evaluate
@@ -11,7 +12,8 @@ from ragas.metrics import faithfulness, answer_relevancy
 # ------------------------------------------------------------------------------
 # 임베딩은 KO-SBERT(무료)를 쓰셨더라도, RAGAS가 채점하려면 똑똑한 LLM이 필요합니다.
 # 여기에 채점용 OpenAI API 키를 입력해 주세요.
-os.environ["OPENAI_API_KEY"] = "sk-여기에_채점용_API키를_입력하세요"
+dotenv.load_dotenv()
+OPENAI_API_KEY =  os.getenv('Emb_KEY')
 
 # ------------------------------------------------------------------------------
 # 2. 최신 RAGAS v0.2+ 규격에 맞춘 데이터셋 준비

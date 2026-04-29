@@ -63,7 +63,7 @@ def load_embedding_model() -> Embeddings:
     return embeddings
 
 # ------------------------------------------------------------------------------
-# 3. [핵심] 사용자 정의 테이블 적재 함수 (Relational Insert)
+# 3. [핵심] 사용자 정의 테이블 배치(Batch) 적재 함수
 # ------------------------------------------------------------------------------
 def get_or_create_collection_id(cursor, collection_name):
     """
@@ -85,25 +85,17 @@ def get_or_create_collection_id(cursor, collection_name):
     
     return new_uuid
 
-def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
+def save_to_specific_table(documents: List[Document], embeddings: Embeddings, batch_size: int = 100):
     """
     LangChain을 통하지 않고, psycopg2로 직접 데이터를 INSERT 합니다.
+    OOM 방지 및 DB 부하 감소를 위해 지정된 배치 사이즈(100건) 단위로 처리합니다.
     """
     if not documents:
         return
 
-    print(f"\n[System] 사용자 정의 테이블 적재 시작 (총 {len(documents)}건)")
+    print(f"\n[System] 사용자 정의 테이블 적재 시작 (총 {len(documents)}건, 배치 사이즈: {batch_size}건)")
     
-    # 1. 텍스트 리스트 추출 및 일괄 벡터화 (속도 최적화)
-    texts = [doc.page_content for doc in documents]
-    try:
-        print(" -> 벡터화 진행 중...")
-        vectors = embeddings.embed_documents(texts)
-    except Exception as e:
-        print(f"[Error] 임베딩 변환 실패: {e}")
-        return
-
-    # 2. DB 연결 및 트랜잭션 처리
+    # 1. DB 연결 및 트랜잭션 처리
     conn = None
     try:
         conn = psycopg2.connect(
@@ -114,8 +106,7 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
         # (1) 컬렉션 ID 확보 (Foreign Key 연결을 위해 필수)
         collection_id = get_or_create_collection_id(cur, COLLECTION_NAME)
         
-        # (2) 임베딩 데이터 INSERT 쿼리
-        # 스키마 순서: uuid, collection_id, embedding, document, cmetadata, custom_id
+        # (2) 임베딩 데이터 INSERT 쿼리 템플릿
         insert_sql = f"""
             INSERT INTO {EMBEDDING_TABLE} (
                 uuid, 
@@ -128,39 +119,51 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
         """
 
         success_count = 0
-        for i, doc in enumerate(documents):
-            # [UUID] DB의 PK용 표준 UUID 생성 (필수)
-            row_uuid = str(uuid.uuid4())
+        
+        # 2. 데이터를 배치 사이즈(100건)만큼 쪼개어 처리
+        for i in range(0, len(documents), batch_size):
+            batch_docs = documents[i : i + batch_size]
+            current_batch_len = len(batch_docs)
             
-            # [Vector]
-            vector = vectors[i]
+            # [Step 1] 배치 단위로 텍스트 추출 및 벡터화 진행 (메모리 절약)
+            texts = [doc.page_content for doc in batch_docs]
+            print(f" -> [{i+1} ~ {i+current_batch_len}] 임베딩 변환 중...")
             
-            # [Content]
-            content = doc.page_content
-            
-            # [JSON] 파이썬 딕셔너리를 JSON 문자열로 변환 (필수)
-            meta_json = json.dumps(doc.metadata)
-            
-            # [Custom ID] 파일에 있던 원래 ID (RENT_...)는 여기에 저장
-            # 메타데이터에 'id' 또는 'rdb_id' 키가 있다고 가정
-            custom_id = doc.metadata.get("rdb_id") or doc.metadata.get("id")
-            if not custom_id:
-                # 데이터에 ID가 없을 경우 임시 ID 생성
-                custom_id = f"AUTO_{uuid.uuid4().hex[:8]}"
+            try:
+                vectors = embeddings.embed_documents(texts)
+            except Exception as e:
+                print(f"[Error] {i+1}번째 배치 임베딩 변환 실패: {e}")
+                continue
 
-            # 쿼리 실행
-            cur.execute(insert_sql, (
-                row_uuid,
-                collection_id,
-                vector,
-                content,
-                meta_json,
-                custom_id
-            ))
-            success_count += 1
+            # [Step 2] DB 적재를 위한 튜플 데이터 생성
+            insert_data = []
+            for j, doc in enumerate(batch_docs):
+                row_uuid = str(uuid.uuid4())
+                vector = vectors[j]
+                content = doc.page_content
+                meta_json = json.dumps(doc.metadata)
+                
+                custom_id = doc.metadata.get("rdb_id") or doc.metadata.get("id")
+                if not custom_id:
+                    custom_id = f"AUTO_{uuid.uuid4().hex[:8]}"
 
-        conn.commit()
-        print(f"[Success] 총 {success_count}건 적재 완료.")
+                insert_data.append((
+                    row_uuid,
+                    collection_id,
+                    vector,
+                    content,
+                    meta_json,
+                    custom_id
+                ))
+
+            # [Step 3] executemany를 활용해 DB에 한 번에 다중 INSERT 실행
+            cur.executemany(insert_sql, insert_data)
+            conn.commit()  # 각 배치마다 커밋하여 안전하게 저장
+            
+            success_count += current_batch_len
+            print(f" -> [{success_count}/{len(documents)}] DB 배치 적재 완료.")
+
+        print(f"\n[Success] 총 {success_count}건 배치 적재 프로세스 완료.")
         print(f" -> Collection ID: {collection_id}")
 
     except Exception as e:
@@ -183,7 +186,7 @@ def run_full_automation(embeddings: Embeddings):
     
     # 프로그램이 실행되는 '오늘' 날짜를 YYYYMMDD 형태로 가져온다.
     # today_str = datetime.now().strftime("%Y%m%d")
-    today_str = '20260310'
+    today_str = 'apt_data_20260131'
 
     target_patterns = [
         f"**/**/*{today_str}*.txt"
@@ -221,8 +224,8 @@ def run_full_automation(embeddings: Embeddings):
                 if fixed_count > 0:
                     print(f"   ⚠️ [Safety] ID가 없는 {fixed_count}개 데이터에 임시 ID를 발급했어요.")
 
-                # (3) DB 적재 함수 호출 (검증된 chunks 전달)
-                save_to_specific_table(chunks, embeddings)
+                # (3) DB 적재 함수 호출 (검증된 chunks 전달, 100건 단위 배치 처리 적용됨)
+                save_to_specific_table(chunks, embeddings, batch_size=100)
                 
                 total_files += 1
                 
