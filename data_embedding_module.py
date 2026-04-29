@@ -6,7 +6,7 @@ import json
 import dotenv
 from typing import List
 import psycopg2 
-from datetime import datetime  
+from datetime import datetime 
 
 # LangChain 필수 라이브러리
 from langchain_core.documents import Document
@@ -146,7 +146,8 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
 # 4. 자동화 로직
 # ------------------------------------------------------------------------------
 def run_full_automation(embeddings: Embeddings):
-    today_str = '2026'
+    today_str = datetime.now().strftime("%Y%m%d")
+    
     target_patterns = [f"**/**/*{today_str}*.txt"]
 
     print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
