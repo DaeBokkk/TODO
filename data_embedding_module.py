@@ -128,13 +128,13 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
             conn.commit()
             
             # 4. 실시간 진행 상황 출력
-            print(f"   ⏳ 진행 상황: {success_count} / {total_docs} 건 완료")
+            print(f"   진행 상황: {success_count} / {total_docs} 건 완료")
 
-        print(f"\n✅ [Success] 총 {success_count}건 적재 완료.")
+        print(f"\n [Success] 총 {success_count}건 적재 완료.")
         print(f" -> Collection ID: {collection_id}")
 
     except Exception as e:
-        print(f"❌ [Error] DB 적재 중 오류 발생: {e}")
+        print(f" [Error] DB 적재 중 오류 발생: {e}")
         if conn:
             conn.rollback()
     finally:
@@ -146,18 +146,19 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
 # 4. 자동화 로직
 # ------------------------------------------------------------------------------
 def run_full_automation(embeddings: Embeddings):
+    
     today_str = datetime.now().strftime("%Y%m%d")
     
     target_patterns = [f"**/**/*{today_str}*.txt"]
 
-    print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
+    print(f"\n [Automation] 금일({today_str}) 데이터 적재 시작")
     total_files = 0
 
     for pattern in target_patterns:
         files = sorted(glob.glob(pattern))
         if not files: continue
 
-        print(f"\n📂 [카테고리] '{pattern}' 패턴 파일 {len(files)}개 발견")
+        print(f"\n [카테고리] '{pattern}' 패턴 파일 {len(files)}개 발견")
         
         for file_path in files:
             print(f"\n--- [Processing] {file_path} ---")
@@ -173,16 +174,16 @@ def run_full_automation(embeddings: Embeddings):
                         fixed_count += 1
                 
                 if fixed_count > 0:
-                    print(f"   ⚠️ [Safety] ID가 없는 {fixed_count}개 데이터에 임시 ID 발급 완료.")
+                    print(f"    [Safety] ID가 없는 {fixed_count}개 데이터에 임시 ID 발급 완료.")
 
                 save_to_specific_table(chunks, embeddings)
                 total_files += 1
                 
             except Exception as e:
-                print(f"❌ [Error] {file_path} 처리 실패: {e}")
+                print(f" [Error] {file_path} 처리 실패: {e}")
                 continue
 
-    print(f"\n✅ [완료] 총 {total_files}개의 금일 파일 처리가 끝났어요.")
+    print(f"\n [완료] 총 {total_files}개의 금일 파일 처리가 끝났어요.")
 
 # ------------------------------------------------------------------------------
 # 5. 메인 실행부
