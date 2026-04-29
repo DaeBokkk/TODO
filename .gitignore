@@ -16,4 +16,3 @@ requirements.txt
 .DS_Store 
 
 # .env (환경 변수 파일)
-.env
