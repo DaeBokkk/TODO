@@ -146,7 +146,7 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
 # 4. 자동화 로직
 # ------------------------------------------------------------------------------
 def run_full_automation(embeddings: Embeddings):
-    today_str = '2026'
+    today_str = '2025'
     target_patterns = [f"**/**/*{today_str}*.txt"]
 
     print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
