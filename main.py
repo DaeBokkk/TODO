@@ -33,9 +33,7 @@ schedule.every().day.at("22:00").do(crawl_law_texts) # 22:00에 뉴스 크롤링
 schedule.every().day.at("23:00").do(embedding)
 
 if __name__ == "__main__":
-    crawl_law_texts()
-    trade_auto_collect()
-    embedding()  # 스크립트 실행 시 즉시 한 번 실행
+
     while True:
         print("스케줄러 대기 중...")
         schedule.run_pending()
