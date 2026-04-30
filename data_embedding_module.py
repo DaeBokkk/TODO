@@ -163,6 +163,17 @@ def run_full_automation(embeddings: Embeddings):
             try:
                 raw_data = load_raw_jsonl_file(file_path)
                 chunks = create_and_chunk_documents(raw_data)
+
+                # # ---------------------------------------------------------
+                # # 💡 [수정/추가된 부분] 59,600번부터 이어서 적재하기 위한 로직
+                # # 특정 파일 이름이 포함되어 있을 때만 슬라이싱을 적용합니다.
+                # if "apt_rent_data_20250101" in file_path:
+                #     start_index = 59600
+                #     print(f"⚠️ [Resume] {file_path} 파일을 {start_index}번 청크부터 이어서 적재합니다.")
+    
+                #     # 59600번째 인덱스부터 끝까지만 남깁니다.
+                #     chunks = chunks[start_index:]
+                # # ---------------------------------------------------------
                 
                 fixed_count = 0
                 for doc in chunks:
