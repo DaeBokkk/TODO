@@ -138,7 +138,7 @@ def create_and_chunk_documents(raw_data_list: List[Dict[str, Any]]) -> List[Docu
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     # 파일 경로 (업로드한 파일명)
-    file_path = 'apt_rent_data_20260111.txt'
+    file_path = "/Users/solseon/Desktop/TODO/txts25,24,23,22/apt_real_estate/apt_rent_data_20240101.txt"
     
     print("--- [1단계] JSONL 파일 로드 ---")
     raw_data = load_raw_jsonl_file(file_path)
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         final_chunks = create_and_chunk_documents(raw_data)
         
         print("\n--- [3단계] 결과 검증 (샘플 출력) ---")
-        for i, chunk in enumerate(final_chunks[:]): # 처음 2개만 출력
+        for i, chunk in enumerate(final_chunks[:1]): # 처음 2개만 출력
             print(f"\n[Chunk #{i+1}]")
             print(f"ID: {chunk.metadata.get('rdb_id')}")
             print(f"enactment_date: {chunk.metadata.get('contract_date')}")

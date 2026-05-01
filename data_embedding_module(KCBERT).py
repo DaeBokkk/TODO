@@ -30,7 +30,7 @@ MODEL_DEVICE = "cpu"
 
 # (2) PostgreSQL DB 연결 정보 (Ngrok 정보 반영)
 DB_HOST = "3.39.23.25"
-DB_PORT = "5432"  # 포트 번호 확인 필요
+DB_PORT = "5432"
 DB_USER = "rag"
 DB_PASSWORD = "rag"
 DB_NAME = "rag"
