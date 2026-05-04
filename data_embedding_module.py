@@ -37,7 +37,7 @@ DB_NAME = "rag"
 
 COLLECTION_TABLE = "public.ko_sbert_collection"
 EMBEDDING_TABLE = "public.ko_sbert_embedding"
-COLLECTION_NAME = "embedding_vector_ko_sbert" 
+COLLECTION_NAME = "embedding_vector_ko_sbert"
 
 # ------------------------------------------------------------------------------
 # 2. 임베딩 모델 로드 함수
@@ -146,8 +146,10 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
 # 4. 자동화 로직
 # ------------------------------------------------------------------------------
 def run_full_automation(embeddings: Embeddings):
-    today_str = '2025'
-    target_patterns = [f"**/**/*{today_str}*.txt"]
+
+    today_str = '2022'
+    # target_patterns = [f"**/**/*{today_str}*.txt"]
+    target_patterns = ["/Users/solseon/Desktop/TODO/txts25,24,23,22/laws/laws.txt"]
 
     print(f"\n🚀 [Automation] 금일({today_str}) 데이터 적재 시작")
     total_files = 0
@@ -167,8 +169,8 @@ def run_full_automation(embeddings: Embeddings):
                 # # ---------------------------------------------------------
                 # # 💡 [수정/추가된 부분] 59,600번부터 이어서 적재하기 위한 로직
                 # # 특정 파일 이름이 포함되어 있을 때만 슬라이싱을 적용합니다.
-                # if "apt_rent_data_20250101" in file_path:
-                #     start_index = 59600
+                # if "apt_data_20260404.txt" in file_path:
+                #     start_index = 800
                 #     print(f"⚠️ [Resume] {file_path} 파일을 {start_index}번 청크부터 이어서 적재합니다.")
     
                 #     # 59600번째 인덱스부터 끝까지만 남깁니다.
