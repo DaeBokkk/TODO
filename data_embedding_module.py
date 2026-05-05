@@ -29,7 +29,7 @@ OPENAI_API_KEY =  os.getenv('Emb_KEY')
 MODEL_ID = "text-embedding-3-small"
 
 
-DB_HOST = "3.34.98.178"
+DB_HOST = "13.209.67.73"
 DB_PORT = "5432"  
 DB_USER = "rag"
 DB_PASSWORD = "rag"
@@ -148,6 +148,7 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
 def run_full_automation(embeddings: Embeddings):
     
     today_str = datetime.now().strftime("%Y%m%d")
+    # today_str = "20260505"
     
     target_patterns = [f"**/**/*{today_str}*.txt"]
 
