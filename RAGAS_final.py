@@ -23,7 +23,7 @@ dotenv.load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv('Emb_KEY') 
 
 # 💡 [핵심] 비용을 1/10로 줄이고 속도를 높인 gpt-4o-mini 모델로 평가관 지정
-print("🤖 [System] 채점관 LLM을 'gpt-4o-mini'로 설정합니다. (비용 절감 및 속도 최적화)")
+print(" [System] 채점관 LLM을 'gpt-4o-mini'로 설정합니다. (비용 절감 및 속도 최적화)")
 cheap_judge_llm = ChatOpenAI(model_name="gpt-4o-mini")
 
 # ------------------------------------------------------------------------------
