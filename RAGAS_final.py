@@ -26,10 +26,11 @@ os.environ["OPENAI_API_KEY"] = os.getenv('Emb_KEY')
 print("🤖 [System] 채점관 LLM을 'gpt-4o-mini'로 설정합니다. (비용 절감 및 속도 최적화)")
 cheap_judge_llm = ChatOpenAI(model_name="gpt-4o-mini")
 
-## ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # 2. CSV 파일 로드 및 전처리
 # ------------------------------------------------------------------------------
-CSV_FILE_PATH = "rag_test_dataset_100.csv" 
+# [수정 1] 테스트 계획서에 맞게 파일명 변경 (80개 시나리오)
+CSV_FILE_PATH = "ragas_80_detail_record.csv" 
 
 print(f"📂 [System] '{CSV_FILE_PATH}' 파일에서 데이터를 불러옵니다...")
 
@@ -39,16 +40,14 @@ except FileNotFoundError:
     print(f"❌ [Error] {CSV_FILE_PATH} 파일을 찾을 수 없습니다. 경로를 확인해주세요.")
     exit()
 
-# 필수 컬럼 존재 여부 확인
+# 필수 컬럼 존재 여부만 확인 (question_type 등을 지우지 않고 살려둡니다)
 required_columns = ['user_input', 'retrieved_contexts', 'response', 'reference']
 for col in required_columns:
     if col not in df.columns:
         raise ValueError(f"❌ [Error] CSV 파일에 필수 컬럼 '{col}'이 없습니다.")
 
-# 💡 [여기에 한 줄 추가!] 
-# question_type 등 쓸데없는(?) 컬럼이 몇 개가 붙어있든 다 무시하고, 
-# 우리가 정의한 필수 컬럼(required_columns) 4개만 잘라내서 덮어씁니다.
-df = df[required_columns]
+# [수정 2] 기존의 df = df[required_columns] 부분을 삭제했습니다. 
+# 이제 question_type이나 latency 같은 여분 컬럼이 최종 결과 엑셀에도 그대로 유지됩니다!
 
 # 문자열로 된 검색결과 리스트를 실제 Python 리스트로 변환
 def parse_contexts(context_str):
@@ -70,7 +69,7 @@ print(f"✅ [System] 총 {total_data}개의 테스트 케이스 로드 완료.\n
 batch_size = 20
 all_eval_results = []
 
-print(f" [System] Rate Limit 방어를 위해 {batch_size}개씩 나누어 평가를 시작합니다.")
+print(f"🚀 [System] Rate Limit 방어를 위해 {batch_size}개씩 나누어 평가를 시작합니다.")
 print("="*50)
 
 for i in range(0, total_data, batch_size):
@@ -92,7 +91,7 @@ for i in range(0, total_data, batch_size):
     
     # 마지막 배치가 아니면 15초 대기 (API 숨고르기)
     if end_idx < total_data:
-        print(f"    과부하 방지를 위해 15초간 대기합니다... (진행률: {end_idx}/{total_data})")
+        print(f"   ⏳ 과부하 방지를 위해 15초간 대기합니다... (진행률: {end_idx}/{total_data})")
         time.sleep(15)
 
 print("="*50)
@@ -120,8 +119,8 @@ print(f"   - 검색 정밀도 (Context Precision): {final_df['context_precision'
 print(f"   - 정답 정확도 (Answer Correctness): {final_df['answer_correctness'].mean():.4f}")
 print("="*50)
 
-# 세부 내역 저장 (100개 전체 문항별 점수)
-detail_file = "ragas_100_detail_report.csv"
+# [수정 3] 세부 내역 저장 파일명을 80개에 맞게 변경
+detail_file = "ragas_80_detail_report.csv"
 final_df.to_csv(detail_file, index=False, encoding='utf-8-sig')
 
 # 평균 요약본 저장 (발표용)
