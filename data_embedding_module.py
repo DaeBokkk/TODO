@@ -29,7 +29,7 @@ OPENAI_API_KEY =  os.getenv('Emb_KEY')
 MODEL_ID = "text-embedding-3-small"
 
 
-DB_HOST = "3.39.23.25"
+DB_HOST = "3.34.98.178"
 DB_PORT = "5432"  
 DB_USER = "rag"
 DB_PASSWORD = "rag"
