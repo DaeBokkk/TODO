@@ -40,12 +40,23 @@ def save_apt_data_to_txt() -> None:
         previous_hashes.update(file_hashes)
 
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
+    # filtered_list: list[dict] = []
+    # for rent in text_strings:
+    #     content = rent.get("content", "")
+    #     content_hash = md5_hash(content)
+    #     if content_hash not in previous_hashes:
+    #         filtered_list.append(rent)
     filtered_list: list[dict] = []
-    for rent in text_strings:
-        content = rent.get("content", "")
-        content_hash = md5_hash(content)
-        if content_hash not in previous_hashes:
-            filtered_list.append(rent)
+    seen_hashes = set(previous_hashes) # seen_hashes는 이전 해시로 초기화하여 중복 제거 기준으로 사용 
+
+    for record in text_strings:
+        content = record.get("content", "")
+        content_hash = md5_hash(content) # 문자열의 MD5 해시값 계산
+
+        if content_hash not in seen_hashes: # 이전 해시와 비교하여 중복 여부 판단 (이전 해시에 없으면 실제 저장 대상)
+            filtered_list.append(record) # 중복이 아닌 경우에만 filtered_list에 추가
+            seen_hashes.add(content_hash) # 현재 record의 해시를 seen_hashes에 추가하여 이후 중복 체크에 포함되도록 함
+
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     ############# 중복 로직 끝 ######################
 
@@ -92,12 +103,22 @@ def save_apt_rent_data_to_txt():
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
     
     filtered_list: list[dict] = []
-    for rent in rent_strings:
-        content = rent.get("content", "") # content 필드에서 문자열 추출
+    # for rent in rent_strings:
+    #     content = rent.get("content", "") # content 필드에서 문자열 추출
+    #     content_hash = md5_hash(content) # 문자열의 MD5 해시값 계산
+    #     if content_hash not in previous_hashes: # 이전 해시와 비교하여 중복 여부 판단
+    #         filtered_list.append(rent)
+    # print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+    seen_hashes = set(previous_hashes) # seen_hashes는 이전 해시로 초기화하여 중복 제거 기준으로 사용 
+
+    for record in rent_strings:
+        content = record.get("content", "")
         content_hash = md5_hash(content) # 문자열의 MD5 해시값 계산
-        if content_hash not in previous_hashes: # 이전 해시와 비교하여 중복 여부 판단
-            filtered_list.append(rent)
-    print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
+
+        if content_hash not in seen_hashes: # 이전 해시와 비교하여 중복 여부 판단 (이전 해시에 없으면 실제 저장 대상)
+            filtered_list.append(record) # 중복이 아닌 경우에만 filtered_list에 추가
+            seen_hashes.add(content_hash) # 현재 record의 해시를 seen_hashes에 추가하여 이후 중복 체크에 포함되도록 함
+
     ############# 중복 로직 끝 ######################
 
     if len(filtered_list) == 0:
@@ -116,7 +137,7 @@ def md5_hash(text: str) -> str:
     import hashlib
     return hashlib.md5(text.encode('utf-8')).hexdigest()
 
-# 전날 txt에서 content만 읽어서 set으로 반환하는 함수
+# 전날 txt에서 content만 읽어서 set으로 반환하는 함수 (현재 메모리에 저장된 데이터 중복도 제거 로직 추가)
 def load_previous_hashes(filepath: str) -> set:
     """전날 txt에서 content 해시만 읽어서 set으로 반환"""
     if not os.path.exists(filepath):
@@ -128,12 +149,13 @@ def load_previous_hashes(filepath: str) -> set:
 
         for block in blocks:
             block = block.strip()
+
             if not block:
                 continue
 
             try:
-                doc = json.loads(block)
-                content = doc.get("content", "")
+                doc = json.loads(block) 
+                content = doc.get("content", "") 
                 content_hash = md5_hash(content)
                 hashes.add(content_hash)
             except:

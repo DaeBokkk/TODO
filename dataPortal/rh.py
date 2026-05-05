@@ -233,12 +233,21 @@ def save_rh_trade_data_to_txt() -> None:
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")
 
     filtered_list: list[dict] = []
+    seen_hashes = set(previous_hashes) # seen_hashes는 이전 해시로 초기화하여 중복 제거 기준으로 사용 
 
-    for rent in rh_strings:
-        content = rent.get("content", "")
-        content_hash = md5_hash(content)
-        if content_hash not in previous_hashes:
-            filtered_list.append(rent)
+    for record in rh_strings:
+        content = record.get("content", "")
+        content_hash = md5_hash(content) # 문자열의 MD5 해시값 계산
+
+        if content_hash not in seen_hashes: # 이전 해시와 비교하여 중복 여부 판단 (이전 해시에 없으면 실제 저장 대상)
+            filtered_list.append(record) # 중복이 아닌 경우에만 filtered_list에 추가
+            seen_hashes.add(content_hash) # 현재 record의 해시를 seen_hashes에 추가하여 이후 중복 체크에 포함되도록 함
+
+    # for rent in rh_strings:
+    #     content = rent.get("content", "")
+    #     content_hash = md5_hash(content)
+    #     if content_hash not in previous_hashes:
+    #         filtered_list.append(rent)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     # 중복 제거 로직 끝
 
@@ -503,12 +512,21 @@ def save_rh_rent_data_to_txt() -> None:
     print(f"=== 이전 파일에서 {len(previous_hashes)}개의 해시 로드 완료 ===")  
     
     filtered_list: list[dict] = []
+    seen_hashes = set(previous_hashes) # seen_hashes는 이전 해시로 초기화하여 중복 제거 기준으로 사용 
 
-    for rent in rh_rent_strings:
-        content = rent.get("content", "")
-        content_hash = md5_hash(content)
-        if content_hash not in previous_hashes:
-            filtered_list.append(rent)
+    for record in rh_rent_strings:
+        content = record.get("content", "")
+        content_hash = md5_hash(content) # 문자열의 MD5 해시값 계산
+
+        if content_hash not in seen_hashes: # 이전 해시와 비교하여 중복 여부 판단 (이전 해시에 없으면 실제 저장 대상)
+            filtered_list.append(record) # 중복이 아닌 경우에만 filtered_list에 추가
+            seen_hashes.add(content_hash) # 현재 record의 해시를 seen_hashes에 추가하여 이후 중복 체크에 포함되도록 함
+
+    # for rent in rh_rent_strings:
+    #     content = rent.get("content", "")
+    #     content_hash = md5_hash(content)
+    #     if content_hash not in previous_hashes:
+    #         filtered_list.append(rent)
     print(f"=== 중복 제거 후 최종 저장할 데이터 건수: {len(filtered_list)}건 ===")
     # 중복 제거 로직 끝
 
