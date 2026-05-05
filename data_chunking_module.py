@@ -138,7 +138,7 @@ def create_and_chunk_documents(raw_data_list: List[Dict[str, Any]]) -> List[Docu
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     # 파일 경로 (업로드한 파일명)
-    file_path = "/Users/solseon/Desktop/TODO/txts25,24,23,22/apt_real_estate/apt_rent_data_20240101.txt"
+    file_path = "/Users/solseon/Desktop/TODO/txts/apt_real_estate/apt_data_20220101.txt"
     
     print("--- [1단계] JSONL 파일 로드 ---")
     raw_data = load_raw_jsonl_file(file_path)
