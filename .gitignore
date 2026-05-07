@@ -13,6 +13,8 @@ __pycache__/
 requirements.txt
 
 # .DS_Store (macOS에서 생성되는 불필요한 파일)
+# 파일 안에 있는 .DS_Store까지 무시하려면 아래와 같이 작성
+**/.DS_Store
 .DS_Store 
 
 # .env (환경 변수 파일)
