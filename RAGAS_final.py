@@ -30,7 +30,7 @@ cheap_judge_llm = ChatOpenAI(model_name="gpt-4o-mini")
 # 2. CSV 파일 로드 및 전처리
 # ------------------------------------------------------------------------------
 # [수정 1] 테스트 계획서에 맞게 파일명 변경 (80개 시나리오)
-CSV_FILE_PATH = "ragas_80_detail_record.csv" 
+CSV_FILE_PATH = "/Users/solseon/Desktop/TODO/ragas_80_detail_recordno3.csv"
 
 print(f"📂 [System] '{CSV_FILE_PATH}' 파일에서 데이터를 불러옵니다...")
 

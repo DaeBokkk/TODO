@@ -1,0 +1,7 @@
+﻿Metrics,Average_Score
+Faithfulness,0.8793650793650793
+Answer Relevancy,0.8165382155462784
+Context Recall,0.8833333333333333
+Context Precision,0.9999999998999997
+Answer Correctness,0.6817800356593327
+Hallucination Rate(%),12.063492063492065
