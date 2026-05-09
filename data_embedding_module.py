@@ -148,7 +148,7 @@ def save_to_specific_table(documents: List[Document], embeddings: Embeddings):
 def run_full_automation(embeddings: Embeddings):
     
     today_str = datetime.now().strftime("%Y%m%d")
-    # today_str = "20260505"
+    # today_str = "20260508"
     
     target_patterns = [f"**/**/*{today_str}*.txt"]
 
