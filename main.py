@@ -9,7 +9,7 @@ from datetime import datetime
 # [1] 모듈 가져오기
 try:
     from modules.preprocessing.extractor import field_extractor
-    from core.gateway.adapters import gemini_engine
+    from core.gateway.adapters import gpt_engine  #llama, gemini, gpt
     from core.memory.history import history_manager  # 멀티턴 기억장치 추가
 except ImportError as e:
     print(f"❌ [오류] 모듈 로딩 실패. 프로젝트 루트에서 실행한다. {e}")
@@ -26,7 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SEARCH_SERVER_URL = "http://3.39.23.25:8000/hybrid_search"
+SEARCH_SERVER_URL = "http://13.209.67.73:8000/hybrid_search"
 
 @app.post("/v1/chat")
 async def chat_endpoint(request: Request):
@@ -92,7 +92,7 @@ async def chat_endpoint(request: Request):
             context_text = "관련 자료 없음"
             print(f"  ⚠️ 검색 실패 (상태 코드: {res.status_code})")
 
-        # 5. 생성 모델(Gemini)을 통해 최종 답변을 생성한다.
+        # 5. 생성 모델(gpt, gemini, llama)을 통해 최종 답변을 생성한다.
         print(f"  🤖 [3단계] 답변 생성 중...")
         today_str = datetime.today().strftime('%Y년 %m월 %d일')
         
@@ -111,7 +111,9 @@ async def chat_endpoint(request: Request):
 1. 사용자가 대명사("여기", "저 아파트들" 등)를 사용하거나 맥락을 이어가는 질문을 하면, [이전 대화 기록]과 [참고 자료]를 종합하여 답변한다.
 2. 제공된 [참고 자료]가 사용자가 질문한 지역이나 아파트와 일치한다면, 해당 데이터를 적극 활용하여 분석한다.
 3. 만약 [참고 자료]에 있는 데이터가 사용자가 질문한 지역/아파트와 무관하거나 엉뚱한 지역의 데이터라면, 이 참고 자료는 완전히 무시한다.
-4. 참고 자료를 무시한 경우, "현재 데이터베이스에 해당 단지의 최근 실거래 내역이 없어 일반적인 전문가 분석을 제공합니다"라고 안내한 뒤, 당신이 가진 사전 지식(학군, 호재, 입지 분석 등)을 총동원하여 최고 품질의 부동산 전망 리포트를 작성한다.
+4. 참고 자료를 무시한 경우, 당신이 가진 사전 지식(학군, 호재, 입지 분석 등)을 동원하여 조금 살살 리포트를 쓴다.
+5. 전망에 대해 자세히 알려달라고 한 경우. 당신이 가진 사전 지식(학군, 호재, 입지 분석 등)을 총동원하여 최고급 부동산 전망 리포트를 작성한다.
+
 
 [참고 자료]
 {context_text}
@@ -141,7 +143,7 @@ async def chat_endpoint(request: Request):
 4. 시장 분석 및 전망 부분도 문단이 바뀔 때마다 반드시 한 줄을 띄어 써서(빈 줄 삽입) 답답해 보이지 않게 작성한다.
 5. 서술형 줄글로 뭉뚱그려 쓰지 말고, 답변은 한국어로 정중하게 작성한다.
 """
-        answer = gemini_engine.generate(prompt)
+        answer = gpt_engine.generate(prompt)  # llama, gemini, gpt
         
         # 생성된 AI의 응답을 다음 세션을 위해 기억장치에 저장한다.
         history_manager.add_system_message(session_id, answer)
