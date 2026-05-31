@@ -164,3 +164,5 @@ if __name__ == "__main__":
             #     price_metric : 가격
             #     period : 조회기간
             # }
+
+            # ㅇㄴㅇㄴ아ㅓ눙너ㅜ어누어ㅜ
